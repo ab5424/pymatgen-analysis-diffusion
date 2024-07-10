@@ -943,18 +943,18 @@ def get_diffusivity_from_msd(msd, dt, smoothed="max"):
     return diffusivity, diffusivity_std_dev
 
 
-def get_statistical_error(z, nu_0, n_vac, Ea, f, t_sim, temp):
+def get_statistical_error(z: float, nu_0: float, n_vac: int, Ea: float, f: float, t_sim: float, temp: float) -> float:
     """
-    Returns the statistical error in the diffusivity, given by:
+    Returns the statistical error in the diffusivity.
 
     Args:
-        z (float): Coordnation number within the sublattice (i.e., the number of adjacent sites to jump into.)
-        nu_0 (float): Attempt frequency. units: 1/s
-        n_vac (int): Number of tracers.
-        Ea (float): Activation energy. units: eV
-        f (float): Tracer correlation factor.
-        t_sim (float): Simulation time. units: fs
-        temp (float): Temperature. units: K
+        z: Coordnation number within the sublattice (i.e., the number of adjacent sites to jump into.)
+        nu_0: Attempt frequency. units: 1/s
+        n_vac: Number of tracers.
+        Ea: Activation energy. units: eV
+        f: Tracer correlation factor.
+        t_sim: Simulation time. units: fs
+        temp: Temperature. units: K
     """
     jump_rate = nu_0 * np.exp(-Ea / (const.k / const.e * np.array(temp)))
     n_jumps = z * jump_rate * f * t_sim / 1e15 * n_vac
@@ -962,15 +962,15 @@ def get_statistical_error(z, nu_0, n_vac, Ea, f, t_sim, temp):
     return np.sqrt(2 / (n_jumps * 3))
 
 
-def get_statistical_error_from_msd(d: int, n_k: int, msd: float, s: float):
+def get_statistical_error_from_msd(d: int, n_k: int, msd: float, s: float) -> float:
     """
-    Returns the statistical error in the diffusivity, given by:
+    Returns the statistical error in the diffusivity, as defined in 10.1002/jcc.27090 (eq. 14).
 
     Args:
-        d (int): Dimensionality of the system.
-        n_k (int): Number of k-points.
-        msd (float): Mean square displacement. units: Å^2
-        s (float): Simulation time. units: fs
+        d: Dimensionality of the system.
+        n_k: Number of tracer particles.
+        msd: Mean square displacement. units: Å^2
+        s: Simulation time. units: fs
     """
     return np.sqrt(2 / (d * n_k * (1 - np.exp(-msd / s**2))))
 
