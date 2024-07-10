@@ -1,9 +1,9 @@
 # Copyright (c) Materials Virtual Lab.
 # Distributed under the terms of the BSD License.
 
-"""
-Function to add edge data to MigrationGraph through 2 SC structures
-"""
+"""Function to add edge data to MigrationGraph through 2 SC structures."""
+
+from __future__ import annotations
 
 __author__ = "Haoming Li"
 __copyright__ = "Copyright 2021, The Materials Project"
@@ -12,20 +12,14 @@ __email__ = "HLi98@lbl.gov"
 __date__ = "February 2, 2021"
 
 import logging
-from typing import Tuple
 
 import numpy as np
+
+from pymatgen.analysis.diffusion.neb.full_path_mapper import MigrationGraph, MigrationHop
+from pymatgen.analysis.diffusion.utils.parse_entries import get_matched_structure_mapping
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.core.structure import PeriodicSite, Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-
-from pymatgen.analysis.diffusion.neb.full_path_mapper import (
-    MigrationGraph,
-    MigrationHop,
-)
-from pymatgen.analysis.diffusion.utils.parse_entries import (
-    get_matched_structure_mapping,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -39,20 +33,22 @@ def add_edge_data_from_sc(
     use_host_sg: bool = True,
 ) -> None:
     """
-    Add a data entry and key to edges within FullPathMapper object with the same hop_label.
-    These hops are equivalent by symmetry to the 2 positions given in the supercell structures.
+    Add a data entry and key to edges within FullPathMapper object with the same
+    hop_label. These hops are equivalent by symmetry to the 2 positions given in the
+    supercell structures.
 
     Args:
+        mg: MigrationGraph object.
         i_sc: Supercell structure containing working ion at initial position
         e_sc: Supercell structure containing working ion at ending position
         data_array: The data to be added to the edges
         key: Key of the edge attribute to be added
-        use_host_sg: Flag t whether or not to use the host structure's spacegroup to initiate MigrationHop
+        use_host_sg: Flag whether to use the host structure's spacegroup to initiate MigrationHop
 
     Returns:
         None
     """
-    wi = list(mg.m_graph.graph.edges(data=True))[0][2]["hop"].isite.specie.name
+    wi = next(iter(mg.m_graph.graph.edges(data=True)))[2]["hop"].isite.specie.name
     i_wi = [x for x in i_sc.sites if x.species_string == wi]
     e_wi = [x for x in e_sc.sites if x.species_string == wi]
     if len(i_wi) != 1 or len(e_wi) != 1:
@@ -69,13 +65,13 @@ def get_uc_pos(
     uc: Structure,
     sc: Structure,
     sm: StructureMatcher,
-) -> Tuple[PeriodicSite, PeriodicSite, PeriodicSite]:
-    """Take positions in the supercel and transform into the unitcell positions
+) -> tuple[PeriodicSite, PeriodicSite, PeriodicSite]:
+    """Take positions in the supercell and transform into the unit cell positions.
 
     Args:
         isite: initial site in the SC
         esite: ending site in the SC
-        uc: Unit Cell structre
+        uc: Unit Cell structure
         sc: Super Cell structure
         sm: StructureMatcher object with the working ion ignored
 
@@ -127,7 +123,7 @@ def _get_first_close_site(frac_coord, structure, stol=0.1):
 
 def mh_eq(mh1, mh2):
     """
-    Allow for symmetric matching of MigrationPath objects with variable precession
+    Allow for symmetric matching of MigrationPath objects with variable precession.
 
     Args:
         mh1: MigrationHop object
@@ -146,25 +142,30 @@ def get_unique_hop(
     isite: PeriodicSite,
     esite: PeriodicSite,
     use_host_sg: bool = True,
-) -> Tuple[int, MigrationHop]:
-    """Get the unique hop label that correspond to two end positions in the SC
+) -> tuple[int, MigrationHop]:
+    """Get the unique hop label that correspond to two end positions in the SC.
 
     Args:
         mg: Object containing the migration analysis
         sc: Structure of the supercell used for the NEB calculation
         isite: Initial position in the supercell
         esite: Final position in the supercell
-        use_host_sg: Flag t whether or not to use the host structure's spacegroup to initiate MigrationHop
+        use_host_sg: Flag t whether or not to use the host structure's spacegroup to
+            initiate MigrationHop
 
     Returns:
-        The index of the unique hop, the MigrationHop object trasformed from the SC
+        The index of the unique hop, the MigrationHop object transformed from the SC
     """
-    sm = StructureMatcher(ignored_species=[list(mg.m_graph.graph.edges(data=True))[0][2]["hop"].isite.specie.name])
+    sm = StructureMatcher(ignored_species=[next(iter(mg.m_graph.graph.edges(data=True)))[2]["hop"].isite.specie.name])
     uc_isite, uc_msite, uc_esite = get_uc_pos(isite, esite, mg.symm_structure, sc, sm)
     if use_host_sg:
         base_ss = SpacegroupAnalyzer(mg.host_structure, symprec=mg.symprec).get_symmetrized_structure()
         mh_from_sc = MigrationHop(
-            uc_isite, uc_esite, symm_structure=mg.symm_structure, host_symm_struct=base_ss, symprec=mg.symprec
+            uc_isite,
+            uc_esite,
+            symm_structure=mg.symm_structure,
+            host_symm_struct=base_ss,
+            symprec=mg.symprec,
         )
     else:
         mh_from_sc = MigrationHop(uc_isite, uc_esite, symm_structure=mg.symm_structure, symprec=mg.symprec)

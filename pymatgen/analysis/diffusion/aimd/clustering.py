@@ -1,16 +1,16 @@
-# Copyright (c) Materials Virtual Lab.
-# Distributed under the terms of the BSD License.
-
 """
 This module implements clustering algorithms to determine centroids, with
 adaption for periodic boundary conditions. This can be used, for example, to
 determine likely atomic positions from MD trajectories.
 """
 
+from __future__ import annotations
+
 import random
 import warnings
 
 import numpy as np
+
 from pymatgen.util.coord import all_distances, pbc_diff
 
 __author__ = "Shyue Ping Ong"
@@ -22,9 +22,7 @@ __date__ = "3/18/15"
 
 
 class Kmeans:
-    """
-    Simple kmeans clustering.
-    """
+    """Simple kmeans clustering."""
 
     def __init__(self, max_iterations: int = 1000):
         """
@@ -195,10 +193,7 @@ class KmeansPBC(Kmeans):
             return True
         if old_centroids is None:
             return False
-        for c1, c2 in zip(old_centroids, centroids):
-            if not np.allclose(pbc_diff(c1, c2), [0, 0, 0]):
-                return False
-        return True
+        return all(np.allclose(pbc_diff(c1, c2), [0, 0, 0]) for c1, c2 in zip(old_centroids, centroids))
 
 
 def get_random_centroid(points):
@@ -223,6 +218,6 @@ def get_random_centroids(points, k):
         k: Number of means.
     """
     centroids = []
-    for i in range(k):
+    for _i in range(k):
         centroids.append(get_random_centroid(points))
     return np.array(centroids)

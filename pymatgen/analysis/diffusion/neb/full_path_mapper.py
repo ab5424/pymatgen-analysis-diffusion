@@ -1,8 +1,5 @@
-# Copyright (c) Materials Virtual Lab.
-# Distributed under the terms of the BSD License.
-"""
-Migraiton Graph Analysis
-"""
+"""Migration Graph Analysis."""
+
 from __future__ import annotations
 
 __author__ = "Jimmy Shen"
@@ -15,33 +12,32 @@ import logging
 import operator
 from copy import deepcopy
 from itertools import starmap
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import networkx as nx
 import numpy as np
 from monty.json import MSONable
+
+from pymatgen.analysis.diffusion.neb.pathfinder import ChgcarPotential, MigrationHop, NEBPathfinder
+from pymatgen.analysis.diffusion.neb.periodic_dijkstra import get_optimal_pathway_rev, periodic_dijkstra
+from pymatgen.analysis.diffusion.utils.parse_entries import process_entries
 from pymatgen.analysis.graphs import StructureGraph
 from pymatgen.analysis.local_env import MinimumDistanceNN, NearNeighbors
-from pymatgen.analysis.path_finder import ChgcarPotential, NEBPathfinder
 from pymatgen.core import Composition, PeriodicSite, Structure
-from pymatgen.entries.computed_entries import ComputedEntry, ComputedStructureEntry
 from pymatgen.io.vasp import VolumetricData
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.symmetry.structure import SymmetrizedStructure
 
-from pymatgen.analysis.diffusion.neb.pathfinder import MigrationHop
-from pymatgen.analysis.diffusion.neb.periodic_dijkstra import (
-    get_optimal_pathway_rev,
-    periodic_dijkstra,
-)
-from pymatgen.analysis.diffusion.utils.parse_entries import process_entries
+if TYPE_CHECKING:
+    from pymatgen.entries.computed_entries import ComputedEntry, ComputedStructureEntry
 
 logger = logging.getLogger(__name__)
 
 
 def generic_groupby(list_in: list, comp: Callable = operator.eq):
     """
-    Group a list of unsortable objects
+    Group a list of unsortable objects.
+
     Args:
         list_in: A list of generic objects
         comp: (Default value = operator.eq) The comparator
@@ -54,7 +50,7 @@ def generic_groupby(list_in: list, comp: Callable = operator.eq):
         if ls1 is not None:
             continue
         list_out[i1] = label_num  # type: ignore
-        for i2, ls2 in list(enumerate(list_out))[i1 + 1 :]:
+        for i2, _ls2 in list(enumerate(list_out))[i1 + 1 :]:
             if comp(list_in[i1], list_in[i2]):
                 if list_out[i2] is None:
                     list_out[i2] = list_out[i1]
@@ -88,6 +84,7 @@ class MigrationGraph(MSONable):
         connecting all sites as specified by the migration graph.
         The sites are decorated with Migration graph objects and then grouped
         together based on their equivalence.
+
         Args:
             structure: Structure with base framework and mobile sites.
              When used with structure_is_base = True, only the base framework
@@ -113,16 +110,12 @@ class MigrationGraph(MSONable):
 
     @property
     def only_sites(self) -> Structure:
-        """
-        A structure that only contains the migrating species
-        """
+        """A structure that only contains the migrating species."""
         return self.m_graph.structure
 
     @property
     def host_structure(self) -> Structure:
-        """
-        A structure that only contains the non-migrating species
-        """
+        """A structure that only contains the non-migrating species."""
         host_struct = self.structure.copy()
         rm_sites = set()
         for isite in self.only_sites:
@@ -136,9 +129,7 @@ class MigrationGraph(MSONable):
 
     @property
     def symm_structure(self) -> SymmetrizedStructure:
-        """
-        The symmetrized structure with the present item's symprec value
-        """
+        """The symmetrized structure with the present item's symprec value."""
         a = SpacegroupAnalyzer(self.structure, symprec=self.symprec)
         sym_struct = a.get_symmetrized_structure()
         if not isinstance(sym_struct, SymmetrizedStructure):
@@ -147,9 +138,7 @@ class MigrationGraph(MSONable):
 
     @property
     def unique_hops(self):
-        """
-        The unique hops dictionary keyed by the hop label
-        """
+        """The unique hops dictionary keyed by the hop label."""
         # reversed so that the first instance represents the group of distinct hops
         ihop_data = list(reversed(list(self.m_graph.graph.edges(data=True))))
         for u, v, d in ihop_data:
@@ -159,11 +148,13 @@ class MigrationGraph(MSONable):
         return {d["hop_label"]: d for u, v, d in ihop_data}
 
     @classmethod
-    def with_base_structure(cls, base_structure: Structure, m_graph: StructureGraph, **kwargs) -> "MigrationGraph":
+    def with_base_structure(cls, base_structure: Structure, m_graph: StructureGraph, **kwargs) -> MigrationGraph:
         """
         Args:
-            base_structure: base framework structure that does not contain any
-             migrating sites.
+            base_structure: base framework structure that does not contain any migrating sites.
+            m_graph: The StructureGraph object that defines the migration network.
+            **kwargs: Passthrough for kwargs.
+
         Returns:
             A constructed MigrationGraph object
         """
@@ -174,13 +165,16 @@ class MigrationGraph(MSONable):
     @classmethod
     def with_local_env_strategy(
         cls, structure: Structure, migrating_specie: str, nn: NearNeighbors, **kwargs
-    ) -> "MigrationGraph":
+    ) -> MigrationGraph:
         """
         Using a specific nn strategy to get the connectivity graph between all the migrating ion sites.
+
         Args:
             structure: Input structure that contains all sites.
             migrating_specie: The specie that migrates. E.g. "Li".
             nn: The specific local environment object used to connect the migrating ion sites.
+            **kwargs: Passthrough for kwargs.
+
         Returns:
             A constructed MigrationGraph object
         """
@@ -191,13 +185,18 @@ class MigrationGraph(MSONable):
     @classmethod
     def with_distance(
         cls, structure: Structure, migrating_specie: str, max_distance: float, **kwargs
-    ) -> "MigrationGraph":
+    ) -> MigrationGraph:
         """
         Using a specific nn strategy to get the connectivity graph between all the migrating ion sites.
+
         Args:
+            structure: Input structure that contains all sites.
+            migrating_specie: The specie that migrates. E.g. "Li".
             max_distance: Maximum length of NEB path in the unit
                 of Angstrom. Defaults to None, which means you are setting the
                 value to the min cutoff until finding 1D or >1D percolating paths.
+            **kwargs: Passthrough for kwargs.
+
         Returns:
             A constructed MigrationGraph object
         """
@@ -221,12 +220,13 @@ class MigrationGraph(MSONable):
         Args:
             entries: list of entries, must contain a mixture of inserted and empty structures.
             migrating_ion_entry: The metallic phase of the working ion, used to calculate insertion energies.
+            **kwargs: Passthrough for kwargs.
 
         Additional Kwargs:
             symprec:  symmetry parameter for SpacegroupAnalyzer
             ltol: Fractional length tolerance for StructureMatcher
             stol: Site tolerance for StructureMatcher
-            angle_tol: Angle tolerance fro StructureMatcher and SpacegroupAnalyzer
+            angle_tol: Angle tolerance for StructureMatcher and SpacegroupAnalyzer
             only_single_cat: If True, only use single cation insertions so the
             site energy is more accurate use_strict_tol: halve the ltol and
             stol parameter for more strict matching.
@@ -288,7 +288,7 @@ class MigrationGraph(MSONable):
         Args:
           u (int): index of initial node
           v (int): index of final node
-          w (int): index for multiple edges that share the same two nodes
+          w (int): index for multiple edges that share the same two nodes.
         """
         edge = self.m_graph.graph[u][v][w]
         i_site = self.only_sites.sites[u]
@@ -306,15 +306,11 @@ class MigrationGraph(MSONable):
         edge["hop"] = MigrationHop(i_site, e_site, self.symm_structure, symprec=self.symprec)
 
     def _populate_edges_with_migration_hops(self):
-        """
-        Populate the edges with the data for the Migration Paths
-        """
+        """Populate the edges with the data for the Migration Paths."""
         list(starmap(self._get_pos_and_migration_hop, self.m_graph.graph.edges))
 
     def _group_and_label_hops(self):
-        """
-        Group the MigrationHop objects together and label all the symmetrically equlivaelnt hops with the same label
-        """
+        """Group the MigrationHop objects together and label all the symmetrically equlivaelnt hops with the same label."""
         hops = list(nx.get_edge_attributes(self.m_graph.graph, "hop").items())
         labs = generic_groupby(hops, comp=lambda x, y: x[1] == y[1])
         new_attr = {g_index: {"hop_label": labs[edge_index]} for edge_index, (g_index, _) in enumerate(hops)}
@@ -333,32 +329,32 @@ class MigrationGraph(MSONable):
             target_label: The edge uniqueness label are adding data
             data: The data to passed to the different edges
             m_hop: If the data is an array, and m_hop is set, it uses the reference migration path to
-            determine whether the data needs to be flipped so that 0-->1 is different from 1-->0
+            determine whether the data needs to be flipped so that 0-->1 is different from 1-->0.
         """
-
-        for u, v, d in self.m_graph.graph.edges(data=True):
+        for _u, _v, d in self.m_graph.graph.edges(data=True):
             if d["hop_label"] == target_label:
                 d.update(data)
-                if m_hop is not None:
-                    # Try to override the data.
-                    if not m_hop.symm_structure.spacegroup.are_symmetrically_equivalent(
-                        [m_hop.isite], [d["hop"].isite]
-                    ):
-                        # "The data going to this edge needs to be flipped"
-                        for k in data.keys():
-                            if isinstance(data[k], (np.ndarray, np.generic)):
-                                raise Warning("The data provided will only be flipped " "if it a list")
-                            if not isinstance(data[k], list):
-                                continue
-                            d[k] = d[k][::-1]  # flip the data in the array
+                # Try to override the data.
+                if m_hop is not None and not m_hop.symm_structure.spacegroup.are_symmetrically_equivalent(
+                    [m_hop.isite], [d["hop"].isite]
+                ):
+                    # "The data going to this edge needs to be flipped"
+                    for k in data:
+                        if isinstance(data[k], (np.ndarray, np.generic)):
+                            raise Warning("The data provided will only be flipped if it a list")
+                        if not isinstance(data[k], list):
+                            continue
+                        d[k] = d[k][::-1]  # flip the data in the array
 
-    def assign_cost_to_graph(self, cost_keys=["hop_distance"]):
+    def assign_cost_to_graph(self, cost_keys=None):
         """
         Read the data dict on each add and populate a cost key
         Args:
             cost_keys: a list of keys for data on each edge.
-                The SC Graph is decorated with a "cost" key that is the product of the different keys here
+                The SC Graph is decorated with a "cost" key that is the product of the different keys here.
         """
+        if cost_keys is None:
+            cost_keys = ["hop_distance"]
         for k, v in self.unique_hops.items():
             cost_val = np.prod([v[ik] for ik in cost_keys])
             self.add_data_to_similar_edges(k, {"cost": cost_val})
@@ -370,17 +366,18 @@ class MigrationGraph(MSONable):
             Get an endpoint p1 in the graph that is outside the current unit cell
             Ask the graph for a pathway that connects to p1 from either within the (0,0,0) cell
             or any other neighboring UC not containing p1.
+
         Args:
             max_val: Filter the graph by a cost
             flip_hops: If true, hops in paths returned will be flipped so
                 isites and esites match to form a coherent path.
                 If false, hops will retain their original orientation
                 from the migration graph.
+
         Returns:
             Generator for list of Dicts:
             Each dict contains the information of a hop
         """
-
         if len(self.unique_hops) != len(self.unique_hops):
             logger.error(f"There are {len(self.unique_hops)} SC hops but {len(self.unique_hops)} UC hops in {self}")
 
@@ -399,7 +396,7 @@ class MigrationGraph(MSONable):
             best_ans, path_parent = periodic_dijkstra(path_graph, sources={u}, weight="cost", max_image=2)
             # find a way to a u site that is not in the (0,0,0) image
             all_paths = []
-            for idx, jimage in path_parent.keys():
+            for idx, jimage in path_parent:
                 if idx == u and jimage != (0, 0, 0):
                     path = [*get_optimal_pathway_rev(path_parent, (idx, jimage))][::-1]
                     assert path[-1][0] == u
@@ -422,7 +419,7 @@ class MigrationGraph(MSONable):
                 all_edge_data = [*path_graph.get_edge_data(i1_, i2_, default={}).items()]
                 image_diff = np.subtract(jimage2, jimage1)
                 found_ = 0
-                for k, tmp_d in all_edge_data:
+                for _k, tmp_d in all_edge_data:
                     if tmp_d["to_jimage"] in {tuple(image_diff), tuple(-image_diff)}:
                         path_hops.append(tmp_d)
                         found_ += 1
@@ -435,7 +432,13 @@ class MigrationGraph(MSONable):
 
     def get_summary_dict(self, added_keys: list[str] | None = None) -> dict:
         """
-        Dictionary format, for saving to database
+        Dictionary format, for saving to database.
+
+        Args:
+            added_keys: a list of keys for data on each edge.
+
+        Returns:
+            Dict.
         """
         hops = []
         keys = ["hop_label", "to_jimage", "ipos", "epos", "ipos_cart", "epos_cart"]
@@ -453,9 +456,9 @@ class MigrationGraph(MSONable):
             hops.append(new_hop)
 
         unique_hops = []
-        for k, d in self.unique_hops.items():
-            new_hop["iindex"] = d["iindex"]
-            new_hop["eindex"] = d["eindex"]
+        for d in self.unique_hops.values():
+            new_hop["iindex"] = d["iindex"]  # type: ignore
+            new_hop["eindex"] = d["eindex"]  # type: ignore
             unique_hops.append(get_keys(d))
 
         unique_hops = sorted(unique_hops, key=lambda x: x["hop_label"])
@@ -470,9 +473,7 @@ class MigrationGraph(MSONable):
 
 
 class ChargeBarrierGraph(MigrationGraph):
-    """
-    A Migration graph with additional charge density analysis on the charge density of the host material
-    """
+    """A Migration graph with additional charge density analysis on the charge density of the host material."""
 
     def __init__(
         self,
@@ -484,13 +485,15 @@ class ChargeBarrierGraph(MigrationGraph):
     ):
         """
         Construct the MigrationGraph object using a VolumetricData object.
-        The graph is constructure using the structure, and cost values are assigned based on charge density analysis.
+        The graph is constructed using the structure, and cost values are assigned based on charge density analysis.
+
         Args:
+            structure (Structure): Input structure.
+            m_graph (StructureGraph): Input structure graph.
             potential_field: Input VolumetricData object that describes the field does
                 not have to contains all the metastable sites.
-            migrating_specie (Specie-like): The specie that migrates. E.g.,
-                "Li".
-            symprec (float): Symmetry precision to determine equivalence.
+            potential_data_key (str): Key for potential data.
+            **kwargs: Passthru for kwargs.
         """
         self.potential_field = potential_field
         self.potential_data_key = potential_data_key
@@ -498,8 +501,7 @@ class ChargeBarrierGraph(MigrationGraph):
         self._setup_grids()
 
     def _setup_grids(self):
-        """Populate the internal varialbes used for defining the grid points in the charge density analysis"""
-
+        """Populate the internal variables used for defining the grid points in the charge density analysis."""
         # set up the grid
         aa = np.linspace(0, 1, len(self.potential_field.get_axis_grid(0)), endpoint=False)
         bb = np.linspace(0, 1, len(self.potential_field.get_axis_grid(1)), endpoint=False)
@@ -528,8 +530,8 @@ class ChargeBarrierGraph(MigrationGraph):
         aa, bb, cc = map(_shift_grid, [aa, bb, cc])
         AA, BB, CC = np.meshgrid(aa, bb, cc, indexing="ij")
         dist_from_pos = self.potential_field.structure.lattice.get_all_distances(
-            fcoords1=np.vstack([AA.flatten(), BB.flatten(), CC.flatten()]).T,
-            fcoords2=pos_frac,
+            np.vstack([AA.flatten(), BB.flatten(), CC.flatten()]).T,
+            pos_frac,
         )
         return dist_from_pos.reshape(AA.shape)
 
@@ -549,7 +551,7 @@ class ChargeBarrierGraph(MigrationGraph):
         mid_struct.insert(0, migration_hop.isite.species_string, mpos, properties=dict(magmom=0))
 
         chgpot = ChgcarPotential(self.potential_field, normalize=False)
-        npf = NEBPathfinder(
+        return NEBPathfinder(
             start_struct,
             end_struct,
             relax_sites=[0],
@@ -557,10 +559,9 @@ class ChargeBarrierGraph(MigrationGraph):
             n_images=n_images,
             mid_struct=mid_struct,
         )
-        return npf
 
     def _get_avg_chg_at_max(self, migration_hop, radius=None, chg_along_path=False, output_positions=False):
-        """obtain the maximum average charge along the path
+        """Obtain the maximum average charge along the path
         Args:
             migration_hop (MigrationHop): MigrationPath object that represents a given hop
             radius (float, optional): radius of sphere to perform the average.
@@ -571,12 +572,12 @@ class ChargeBarrierGraph(MigrationGraph):
             output_positions (bool, optional): If True, also return the entire list of average
                     charges along the path for plotting.
                     Defaults to False.
+
         Returns:
             [float]: maximum of the charge density, (optional: entire list of charge density)
         """
-        if radius is None:
-            rr = self._tube_radius
-        if rr <= 0:
+        rr = radius or self._tube_radius
+        if rr <= 0:  # type: ignore
             raise ValueError("The integration radius must be positive.")
 
         npf = self._get_pathfinder_from_hop(migration_hop)
@@ -603,13 +604,14 @@ class ChargeBarrierGraph(MigrationGraph):
         Calculate the amount of charge that a migrating ion has to move through in order to complete a hop
         Args:
             migration_hop: MigrationHop object that represents a given hop
-            mask_file_seedname(string): seedname for output of the migration path masks (for debugging and
-                visualization) (Default value = None)
+            mask_file_seedname(string): seed name for output of the migration path masks (for debugging and
+                visualization) (Default value = None).
+
         Returns:
             float: The total charge density in a tube that connects two sites of a given edges of the graph
         """
         try:
-            self._tube_radius
+            _ = self._tube_radius
         except NameError:
             logger.warning("The radius of the tubes for charge analysis need to be defined first.")
         ipos = migration_hop.isite.frac_coords
@@ -685,7 +687,7 @@ class ChargeBarrierGraph(MigrationGraph):
         """
         obtain an intercolating pathway through the material that has the least amount of charge
         Returns:
-            list of hops
+            list of hops.
         """
         min_chg = 100000000
         min_path = []
@@ -700,9 +702,7 @@ class ChargeBarrierGraph(MigrationGraph):
         return min_path
 
     def get_summary_dict(self, add_keys: list[str] | None = None):
-        """
-        Dictionary format, for saving to database
-        """
+        """Dictionary format, for saving to database."""
         a_keys = ["max_avg_chg", "chg_total"]
         if add_keys is not None:
             a_keys += add_keys
@@ -713,6 +713,7 @@ class ChargeBarrierGraph(MigrationGraph):
 def get_only_sites_from_structure(structure: Structure, migrating_specie: str) -> Structure:
     """
     Get a copy of the structure with only the migrating sites.
+
     Args:
         structure: The full_structure that contains all the sites
         migrating_specie: The name of migrating species
@@ -732,7 +733,7 @@ def _shift_grid(vv):
     """
     Move the grid points by half a step so that they sit in the center
     Args:
-        vv: equally space grid points in 1-D
+        vv: equally space grid points in 1-D.
     """
     step = vv[1] - vv[0]
     return vv + step / 2.0
@@ -741,19 +742,18 @@ def _shift_grid(vv):
 def get_hop_site_sequence(hop_list: list[dict], start_u: int | str, key: str | None = None) -> list:
     """
     Read in a list of hop dictionaries and print the sequence of sites (and relevant property values if any).
+
     Args:
         hop_list: a list of the data on a sequence of hops
         start_u: the site index of the starting sites
         key (optional): property to track in a hop (e.g.: "hop_distance")
+
     Returns:
         String representation of the hop sequence (and property values if any)
     """
     hops = iter(hop_list)
     ihop = next(hops)
-    if ihop["eindex"] == start_u:
-        site_seq = [ihop["eindex"], ihop["iindex"]]
-    else:
-        site_seq = [ihop["iindex"], ihop["eindex"]]
+    site_seq = [ihop["eindex"], ihop["iindex"]] if ihop["eindex"] == start_u else [ihop["iindex"], ihop["eindex"]]
 
     for ihop in hops:
         if ihop["iindex"] == site_seq[-1]:
@@ -781,6 +781,7 @@ def order_path(hop_list: list[dict], start_u: int | str) -> list[dict]:
     For example if hop_list = [{iindex:0, eindex:1, etc.}, {iindex:0, eindex:1, etc.}]
     then the output is [{iindex:0, eindex:1, etc.}, {iindex:1, eindex:0, etc.}] so that
     the following hop iindex matches the previous hop's eindex.
+
     Args:
         hop_list: a list of the data on a sequence of hops
         start_u: the site index of the starting sites
@@ -818,8 +819,8 @@ def order_path(hop_list: list[dict], start_u: int | str) -> list[dict]:
                 "hop_distance": fh.length,
             }
             # flip any data that is in a list to match flipped hop orientation
-            for k in hop.keys():
-                if k not in fhd.keys():
+            for k in hop:
+                if k not in fhd:
                     if isinstance(hop[k], list):
                         fhd[k] = hop[k][::-1]
                     else:
@@ -844,9 +845,7 @@ migration events using the following procedure:
 
 
 def almost(a, b):
-    """
-    return true if the values are almost equal
-    """
+    """Return true if the values are almost equal."""
     SMALL_VAL = 1e-4
     try:
         return all(almost(i, j) for i, j in zip(list(a), list(b)))
@@ -859,15 +858,16 @@ def almost(a, b):
 def check_uc_hop(sc_hop, uc_hop):
     """
     See if hop in the 2X2X2 supercell and a unit cell hop
-    are equilvalent under lattice translation
+    are equivalent under lattice translation.
+
     Args:
         sc_hop: MigrationHop object form pymatgen-diffusion.
         uc_hop: MigrationHop object form pymatgen-diffusion.
+
     Return:
-        image vector of lenght 3
+        image vector of length 3
         Is the UC hop flip of the SC hop
     """
-
     directions = np.array(
         [
             [0, 0, 0],
@@ -904,9 +904,11 @@ def check_uc_hop(sc_hop, uc_hop):
 def map_hop_sc2uc(sc_hop: MigrationHop, mg: MigrationGraph):
     """
     Map a given hop in the SC onto the UC.
+
     Args:
         sc_hop: MigrationHop object form pymatgen-diffusion.
         mg: MigrationGraph object from pymatgen-diffusion.
+
     Note:
         For now assume that the SC is exactly 2x2x2 of the UC.
         Can add in the parsing of different SC's later

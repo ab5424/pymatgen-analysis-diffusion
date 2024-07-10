@@ -1,9 +1,9 @@
-.. image:: https://github.com/materialsvirtuallab/pymatgen-diffusion/actions/workflows/testing.yml/badge.svg
+.. image:: https://github.com/materialsvirtuallab/pymatgen-analysis-diffusion/actions/workflows/testing.yml/badge.svg
       :alt: CI Status
       :target: https://github.com/materialsvirtuallab/pymatgen-diffusion/actions/workflows/testing.yml
 
-.. image:: https://coveralls.io/repos/github/materialsvirtuallab/pymatgen-diffusion/badge.svg?branch=master
-      :target: https://coveralls.io/github/materialsvirtuallab/pymatgen-diffusion?branch=master
+.. image:: https://codecov.io/gh/materialsvirtuallab/pymatgen-analysis-diffusion/graph/badge.svg?token=4lH4UZcXye
+      :target: https://codecov.io/gh/materialsvirtuallab/pymatgen-analysis-diffusion
 
 pymatgen-analysis-diffusion
 ===========================
@@ -13,6 +13,8 @@ analysis that is developed by the Materials Virtual Lab. Note that it relies on
 pymatgen for structural manipulations, file io, and preliminary analyses. This is
 and will always be, a scientific work in progress. Pls check back regularly for
 more details.
+
+Documentation available via `Github Pages <https://github.com/materialsvirtuallab/pymatgen-analysis-diffusion>`_.
 
 Major Update (v2021.3.5)
 ========================
@@ -49,7 +51,7 @@ given that it forms the basis for most of the analyses::
     Open-Source Python Library for Materials Analysis.* Computational
     Materials Science, 2013, 68, 314-319. doi:10.1016/j.commatsci.2012.10.028.
 
-In addtion, some of the analyses may also have relevant publications that
+In addition, some of the analyses may also have relevant publications that
 you should cite. Please consult the documentation of each module.
 
 Contributing
@@ -58,8 +60,8 @@ Contributing
 We welcome contributions in all forms. If you'd like to contribute, please
 fork this repository, make changes and send us a pull request!
 
-Acknowledgements
-================
+Acknowledgments
+===============
 
 We gratefully acknowledge funding from the following agencies for the
 development of this code:

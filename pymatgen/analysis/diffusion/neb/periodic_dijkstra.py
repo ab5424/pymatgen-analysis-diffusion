@@ -1,8 +1,8 @@
 # Copyright (c) Materials Virtual Lab.
 # Distributed under the terms of the BSD License.
-"""
-Dijkstra's path search on a graph where the nodes are on a periodic graph
-"""
+"""Dijkstra's path search on a graph where the nodes are on a periodic graph."""
+
+from __future__ import annotations
 
 __author__ = "Jimmy Shen"
 __copyright__ = "Copyright 2021, The Materials Project"
@@ -13,18 +13,25 @@ __date__ = "April 11, 2019"
 import heapq
 import math
 from collections import defaultdict
-from typing import Callable, Dict, Set
+from typing import TYPE_CHECKING, Callable
 
 import numpy as np
-from networkx.classes.graph import Graph
-from pymatgen.analysis.graphs import StructureGraph
+
+if TYPE_CHECKING:
+    from networkx.classes.graph import Graph
+
+    from pymatgen.analysis.graphs import StructureGraph
 
 
-def _get_adjacency_with_images(G: Graph) -> Dict:
+def _get_adjacency_with_images(G: Graph) -> dict:
     """
     Return an adjacency dictionary with properly oriented "to_image" values.
     Note: the current implementation assumes that the original
     "to_jimage" value always corresponds to a an edge u -> v where u <= v.
+
+    Args:
+        G (pymatgen.analysis.graphs.StructureGraph): Structure graph.
+
     Returns:
         dict: Nested dictionary with [start][end][edge_key][data_field]
     """
@@ -48,7 +55,7 @@ def _get_adjacency_with_images(G: Graph) -> Dict:
     # Make sure all the to_jimages are pointing in the correct direction
     for u, value1 in p_graph.items():
         for v, value2 in value1.items():
-            for k, d in value2.items():
+            for d in value2.values():
                 if u > v:
                     d["to_jimage"] = tuple(np.multiply(-1, d["to_jimage"]))
     return p_graph
@@ -70,16 +77,16 @@ def periodic_dijkstra(
         G (Graph): The graph object with additional "to_jimage" fields to
                 indicate edges across periodic images.
         sources (set): the index of the source node
-        target (int, optional): The index of of target node, if None populate all nodes. Defaults to None.
+        weight: the weight of the edges.
         max_image (int, optional): Defaults to 3.
         target_reached (callable, optional): A function of (site_index, jimage) used to check
             for stop iteration. This function is always called on the top of heap so it might miss the optimal path but
             often can find a "good enough" path very quickly.
+
     Returns:
         best_ans: a dictionary of the best cost found to periodic node keyed by (site_index, jimage)
         path_parent: dictionary of optimal path parent for each node given in index-image pairs.
     """
-
     conn_dict = _get_adjacency_with_images(G.to_undirected())
 
     # use a default dict since we don't know how far out to search
@@ -96,7 +103,7 @@ def periodic_dijkstra(
         if min_val < best_ans[(cur_idx, cur_image)]:
             best_ans[(cur_idx, cur_image)] = min_val
         for next_node, keyed_data in conn_dict[cur_idx].items():
-            for k, d in keyed_data.items():
+            for d in keyed_data.values():
                 # get the node index, image pair
                 new_image = tuple(np.add(cur_image, d["to_jimage"]))
                 next_index_pair = (next_node, new_image)
@@ -116,7 +123,7 @@ def periodic_dijkstra(
 
 def periodic_dijkstra_on_sgraph(
     sgraph: StructureGraph,
-    sources: Set,
+    sources: set,
     weight: str = "weight",
     max_image: int = 1,
     target_reached: Callable = lambda idx, jimage: False,
@@ -129,11 +136,12 @@ def periodic_dijkstra_on_sgraph(
     Args:
         sgraph (Graph): The StructureGraph object used for path searching
         sources (set): the index of the source node
-        target (int, optional): The index of of target node, if None populate all nodes. Defaults to None.
+        weight: the weight of the edges.
         max_image (int, optional): Defaults to 3.
         target_reached (callable, optional): A function of (site_index, jimage) used to check
             for stop iteration. This function is always called on the top of heap so it might miss the optimal path but
             often can find a "good enough" path very quickly.
+
     Returns:
         best_ans: a dictionary of the best cost found to periodic node keyed by (site_index, jimage)
         path_parent: dictionary of optimal path parent for each node given in index-image pairs.
@@ -150,9 +158,7 @@ def periodic_dijkstra_on_sgraph(
 
 
 def get_optimal_pathway_rev(path_parent: dict, leaf_node: tuple):
-    """
-    follow a leaf node all the way up to source.
-    """
+    """Follow a leaf node all the way up to source."""
     cur = leaf_node
     while cur in path_parent:
         yield cur

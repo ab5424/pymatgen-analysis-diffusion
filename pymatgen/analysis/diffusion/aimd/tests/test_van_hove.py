@@ -1,5 +1,6 @@
 # Copyright (c) Materials Virtual Lab.
 # Distributed under the terms of the BSD License.
+from __future__ import annotations
 
 from pymatgen.core import Lattice, Structure
 
@@ -10,17 +11,14 @@ import os
 import unittest
 from copy import deepcopy
 
-import matplotlib
+import matplotlib as mpl
 import numpy as np
+import pytest
 from monty.serialization import loadfn
 
-from pymatgen.analysis.diffusion.aimd.van_hove import (
-    EvolutionAnalyzer,
-    RadialDistributionFunction,
-    VanHoveAnalysis,
-)
+from pymatgen.analysis.diffusion.aimd.van_hove import EvolutionAnalyzer, RadialDistributionFunction, VanHoveAnalysis
 
-matplotlib.use("pdf")
+mpl.use("pdf")
 tests_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -40,9 +38,13 @@ class VanHoveTest(unittest.TestCase):
         )
 
         check = np.shape(vh.gsrt) == (20, 101) and np.shape(vh.gdrt) == (20, 101)
-        self.assertTrue(check)
+        assert check
         self.assertAlmostEqual(vh.gsrt[0, 0], 3.98942280401, 10)
         self.assertAlmostEqual(vh.gdrt[10, 0], 9.68574868168, 10)
+        ax = vh.get_1d_plot()
+        assert isinstance(ax, mpl.axes.Axes)
+        ax = vh.get_3d_plot()
+        assert isinstance(ax, mpl.axes.Axes)
 
 
 class RDFTest(unittest.TestCase):
@@ -69,7 +71,7 @@ class RDFTest(unittest.TestCase):
         )
 
         check = np.shape(obj.rdf)[0] == 101 and np.argmax(obj.rdf) == 34
-        self.assertTrue(check)
+        assert check
         self.assertAlmostEqual(obj.rdf.max(), 1.634448, 4)
 
         # Test init
@@ -86,7 +88,7 @@ class RDFTest(unittest.TestCase):
         )
 
         check = np.shape(obj.rdf)[0] == 101 and np.argmax(obj.rdf) == 34
-        self.assertTrue(check)
+        assert check
         self.assertAlmostEqual(obj.rdf.max(), 1.634448, 4)
 
         # Test init using structures w/ different lattices
@@ -125,7 +127,7 @@ class RDFTest(unittest.TestCase):
         rdf = RadialDistributionFunction.from_species(
             structures=[structure], species=["S"], rmax=5.0, sigma=0.1, ngrid=500
         )
-        self.assertEqual(rdf.coordination_number[100], 6.0)
+        assert rdf.coordination_number[100] == 6.0
 
     def test_rdf_two_species_coordination_number(self):
         # create a structure with interpenetrating simple cubic lattice
@@ -141,7 +143,7 @@ class RDFTest(unittest.TestCase):
             sigma=0.1,
             ngrid=500,
         )
-        self.assertEqual(rdf.coordination_number[100], 8.0)
+        assert rdf.coordination_number[100] == 8.0
 
     def setUp(self):
         coords = np.array([[0.5, 0.5, 0.5]])
@@ -150,20 +152,20 @@ class RDFTest(unittest.TestCase):
         self.structure = Structure(lattice, atom_list, coords)
 
     def test_raises_valueerror_if_ngrid_is_less_than_2(self):
-        with self.assertRaises(ValueError):
-            rdf = RadialDistributionFunction.from_species(structures=[self.structure], ngrid=1)
+        with pytest.raises(ValueError):
+            RadialDistributionFunction.from_species(structures=[self.structure], ngrid=1)
 
     def test_raises_ValueError_if_sigma_is_not_positive(self):
-        with self.assertRaises(ValueError):
-            rdf = RadialDistributionFunction.from_species(structures=[self.structure], sigma=0)
+        with pytest.raises(ValueError):
+            RadialDistributionFunction.from_species(structures=[self.structure], sigma=0)
 
     def test_raises_ValueError_if_species_not_in_structure(self):
-        with self.assertRaises(ValueError):
-            rdf = RadialDistributionFunction.from_species(structures=[self.structure], species=["Cl"])
+        with pytest.raises(ValueError):
+            RadialDistributionFunction.from_species(structures=[self.structure], species=["Cl"])
 
     def test_raises_ValueError_if_reference_species_not_in_structure(self):
-        with self.assertRaises(ValueError):
-            rdf = RadialDistributionFunction.from_species(
+        with pytest.raises(ValueError):
+            RadialDistributionFunction.from_species(
                 structures=[self.structure], species=["S"], reference_species=["Cl"]
             )
 
@@ -182,9 +184,8 @@ class EvolutionAnalyzerTest(unittest.TestCase):
         rdf = eva.get_df(EvolutionAnalyzer.rdf, pair=("Na", "Na"))
         atom_dist = eva.get_df(EvolutionAnalyzer.atom_dist, specie="Na", direction="c")
         check = np.shape(rdf) == (10, 101) and np.shape(atom_dist) == (10, 101) and ("Na", "Na") in eva.pairs
-        self.assertTrue(check)
+        assert check
         self.assertAlmostEqual(max(np.array(rdf)[0]), 1.772465, 4)
 
-
-if __name__ == "__main__":
-    unittest.main()
+        ax = eva.plot_rdf_evolution(("Na", "Na"))
+        assert isinstance(ax, mpl.axes.Axes)

@@ -1,25 +1,26 @@
 # Copyright (c) Materials Virtual Lab.
 # Distributed under the terms of the BSD License.
 
-"""
-Van Hove analysis for correlations.
-"""
+"""Van Hove analysis for correlations."""
+
 from __future__ import annotations
 
 import itertools
 from collections import Counter
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pds
+import pandas as pd
 from scipy.stats import norm
 
-from pymatgen.core import Structure
 from pymatgen.util.plotting import pretty_plot
-from pymatgen.analysis.diffusion.analyzer import DiffusionAnalyzer
 
 from .rdf import RadialDistributionFunction
+
+if TYPE_CHECKING:
+    from pymatgen.analysis.diffusion.analyzer import DiffusionAnalyzer
+    from pymatgen.core import Structure
 
 __author__ = "Iek-Heng Chu"
 __version__ = "1.0"
@@ -28,14 +29,14 @@ __date__ = "Aug 9, 2017"
 
 class VanHoveAnalysis:
     """
-    Class for van Hove function analysis. In particular, self-part (Gs) and
-    distinct-part (Gd) of the van Hove correlation function G(r,t)
-    for given species and given structure are computed. If you use this class,
-    please consider citing the following paper:
+    Class for van Hove function analysis.
 
-    Zhu, Z.; Chu, I.-H.; Deng, Z. and Ong, S. P. "Role of Na+ Interstitials
-    and Dopants in Enhancing the Na+ Conductivity of the Cubic Na3PS4
-    Superionic Conductor". Chem. Mater. (2015), 27, pp 8318–8325
+    In particular, self-part (Gs) and distinct-part (Gd) of the van Hove correlation function G(r,t) for given species
+    and given structure are computed. If you use this class, please consider citing the following paper::
+
+        Zhu, Z.; Chu, I.-H.; Deng, Z. and Ong, S. P. "Role of Na+ Interstitials
+        and Dopants in Enhancing the Na+ Conductivity of the Cubic Na3PS4
+        Superionic Conductor". Chem. Mater. (2015), 27, pp 8318-8325
     """
 
     def __init__(
@@ -75,7 +76,6 @@ class VanHoveAnalysis:
                 will be selected for the analysis. If this is given, "species"
                 parameter will be ignored.
         """
-
         # initial check
         if step_skip <= 0:
             raise ValueError("skip_step should be >=1!")
@@ -122,7 +122,7 @@ class VanHoveAnalysis:
         aux_factor = 4.0 * np.pi * interval**2
         aux_factor[0] = np.pi * dr**2
 
-        for i, ss in enumerate(diffusion_analyzer.get_drift_corrected_structures()):
+        for _i, ss in enumerate(diffusion_analyzer.get_drift_corrected_structures()):
             all_fcoords = np.array(ss.frac_coords)
             tracking_ions.append(all_fcoords[indices, :])
             ref_ions.append(all_fcoords[ref_indices, :])
@@ -202,8 +202,14 @@ class VanHoveAnalysis:
         """
         Plot 3D self-part or distinct-part of van Hove function, which is
         specified by the input argument 'type'.
-        """
 
+        Args:
+            figsize (tuple): fig size in inches.
+            mode (str): 'distinct' or 'both'.
+
+        Returns:
+            matplotlib.axes._subplots.Axes: axes object.
+        """
         assert mode in ["distinct", "self"]
 
         if mode == "distinct":
@@ -211,7 +217,7 @@ class VanHoveAnalysis:
             vmax = 4.0
             cb_ticks = [0, 1, 2, 3, 4]
             cb_label = "$G_d$($t$,$r$)"
-        elif mode == "self":
+        else:
             grt = self.gsrt.copy()
             vmax = 1.0
             cb_ticks = [0, 1]
@@ -227,21 +233,27 @@ class VanHoveAnalysis:
         plt.xticks(fontsize=ticksize)
         plt.yticks(fontsize=ticksize)
 
+        ax = plt.gca()
+
         labelsize = int(figsize[0] * 3)
 
         plt.pcolor(X, Y, grt, cmap="jet", vmin=grt.min(), vmax=vmax)
-        plt.xlabel("Time (ps)", size=labelsize)
-        plt.ylabel(r"$r$ ($\AA$)", size=labelsize)
-        plt.axis([x.min(), x.max(), y.min(), y.max()])
+        ax.set_xlabel("Time (ps)", size=labelsize)
+        ax.set_ylabel(r"$r$ ($\AA$)", size=labelsize)
+        ax.axis([x.min(), x.max(), y.min(), y.max()])
 
         cbar = plt.colorbar(ticks=cb_ticks)
         cbar.set_label(label=cb_label, size=labelsize)
         cbar.ax.tick_params(labelsize=ticksize)
-        plt.tight_layout()
 
-        return plt
+        return ax
 
-    def get_1d_plot(self, mode: str = "distinct", times: list = [0.0], colors: list | None = None):
+    def get_1d_plot(
+        self,
+        mode: str = "distinct",
+        times: list | None = None,
+        colors: list | None = None,
+    ):
         """
         Plot the van Hove function at given r or t.
 
@@ -251,7 +263,12 @@ class VanHoveAnalysis:
                             function will be plotted.
             colors (list strings/tuples): Additional color settings. If not set,
                             seaborn.color_plaette("Set1", 10) will be used.
+
+        Returns:
+            matplotlib.axes._subplots.Axes: axes object.
         """
+        if times is None:
+            times = [0.0]
         if colors is None:
             import seaborn as sns
 
@@ -264,34 +281,31 @@ class VanHoveAnalysis:
             grt = self.gdrt.copy()
             ylabel = "$G_d$($t$,$r$)"
             ylim = [-0.005, 4.0]
-        elif mode == "self":
+        else:
             grt = self.gsrt.copy()
             ylabel = r"4$\pi r^2G_s$($t$,$r$)"
             ylim = [-0.005, 1.0]
 
-        plt = pretty_plot(12, 8)
+        ax = pretty_plot(12, 8)
 
         for i, time in enumerate(times):
             index = int(np.round(time / self.timeskip))
             index = min(index, np.shape(grt)[0] - 1)
             new_time = index * self.timeskip
             label = str(new_time) + " ps"
-            plt.plot(self.interval, grt[index], color=colors[i], label=label, linewidth=4.0)
+            ax.plot(self.interval, grt[index], color=colors[i], label=label, linewidth=4.0)
 
-        plt.xlabel(r"$r$ ($\AA$)")
-        plt.ylabel(ylabel)
-        plt.legend(loc="upper right", fontsize=36)
-        plt.xlim(0.0, self.interval[-1] - 1.0)
-        plt.ylim(ylim[0], ylim[1])
-        plt.tight_layout()
+        ax.set_xlabel(r"$r$ ($\AA$)")
+        ax.set_ylabel(ylabel)
+        ax.legend(loc="upper right", fontsize=36)
+        ax.set_xlim(0.0, self.interval[-1] - 1.0)
+        ax.set_ylim(ylim[0], ylim[1])
 
-        return plt
+        return ax
 
 
 class EvolutionAnalyzer:
-    """
-    Analyze the evolution of structures during AIMD simulations.
-    """
+    """Analyze the evolution of structures during AIMD simulations."""
 
     def __init__(self, structures: list, rmax: float = 10, step: int = 1, time_step: int = 2):
         """
@@ -302,7 +316,7 @@ class EvolutionAnalyzer:
 
         If you use this class, please consider citing the following paper:
         Tang, H.; Deng, Z.; Lin, Z.; Wang, Z.; Chu, I-H; Chen, C.; Zhu, Z.;
-        Zheng, C.; Ong, S. P. "Probing Solid–Solid Interfacial Reactions in
+        Zheng, C.; Ong, S. P. "Probing Solid-Solid Interfacial Reactions in
         All-Solid-State Sodium-Ion Batteries with First-Principles
         Calculations", Chem. Mater. (2018), 30(1), pp 163-173.
 
@@ -385,9 +399,9 @@ class EvolutionAnalyzer:
             density (np.array): atomic concentration along one direction.
         """
         if direction in ["a", "b", "c"]:
-            l = getattr(structure.lattice, direction)
+            latt_len = getattr(structure.lattice, direction)
             ind = ["a", "b", "c"].index(direction)
-            assert window <= l, "Window range exceeds valid bounds!"
+            assert window <= latt_len, "Window range exceeds valid bounds!"
         else:
             raise ValueError("Choose from a, b and c!")
 
@@ -395,10 +409,10 @@ class EvolutionAnalyzer:
         atom_total = structure.composition[specie]
         density = []
 
-        for i in np.linspace(0, l - window, ngrid):
+        for i in np.linspace(0, latt_len - window, ngrid):
             atoms = []
             for j in [-1, 0, 1]:
-                temp = [s for s in atom_list if i - window < s.coords[ind] % l + l * j < i + window]
+                temp = [s for s in atom_list if i - window < s.coords[ind] % latt_len + latt_len * j < i + window]
                 atoms.extend(temp)
 
             density.append(len(atoms) / atom_total)
@@ -422,6 +436,7 @@ class EvolutionAnalyzer:
                     df = EvolutionAnalyzer.get_df(
                         func=EvolutionAnalyzer.atom_dist, specie="Na")
             save_csv (str): save pandas DataFrame to csv.
+            **kwargs: Pass-through to func.
 
         Returns:
             pandas.DataFrame object: index is the radial distance in Angstrom,
@@ -437,7 +452,7 @@ class EvolutionAnalyzer:
 
         index = np.arange(len(self.structures)) * self.time_step * self.step / 1000
         columns = np.linspace(0, self.rmax, ngrid)
-        df = pds.DataFrame(prop_table, index=index, columns=columns)
+        df = pd.DataFrame(prop_table, index=index, columns=columns)
 
         if save_csv is not None:
             df.to_csv(save_csv)
@@ -445,7 +460,7 @@ class EvolutionAnalyzer:
         return df
 
     @staticmethod
-    def get_min_dist(df: pds.DataFrame, tol: float = 1e-10):
+    def get_min_dist(df: pd.DataFrame, tol: float = 1e-10):
         """
         Get the shortest pair distance from the given DataFrame.
 
@@ -466,7 +481,7 @@ class EvolutionAnalyzer:
 
     @staticmethod
     def plot_evolution_from_data(
-        df: pds.DataFrame,
+        df: pd.DataFrame,
         x_label: str | None = None,
         cb_label: str | None = None,
         cmap=plt.cm.plasma,  # pylint: disable=E1101
@@ -477,7 +492,6 @@ class EvolutionAnalyzer:
         implement in the future.
 
         Args:
-
             df (pandas.DataFrame): input DataFrame object, index is the radial
                 distance in Angstrom, and column is the time step in ps.
             x_label (str): x label
@@ -513,19 +527,18 @@ class EvolutionAnalyzer:
 
         plt.xticks(rotation="horizontal")
 
-        plt.xlabel(x_label, fontsize=30)
-        plt.ylabel("Time (ps)", fontsize=30)
+        ax.set_xlabel(x_label, fontsize=30)
+        ax.set_ylabel("Time (ps)", fontsize=30)
 
         plt.yticks(rotation="horizontal")
-        plt.tight_layout()
 
-        return plt
+        return ax
 
     def plot_rdf_evolution(
         self,
         pair: tuple,
         cmap=plt.cm.plasma,  # pylint: disable=E1101
-        df: pds.DataFrame = None,
+        df: pd.DataFrame = None,
     ):
         """
         Plot the RDF evolution with time for a given pair.
@@ -536,22 +549,21 @@ class EvolutionAnalyzer:
                 cmocean.cm.thermal is recommended
             df (DataFrame): external data, index is the radial distance in
                 Angstrom, and column is the time step in ps.
+
         Returns:
             matplotlib.axes._subplots.AxesSubplot object
         """
         if df is None:
             df = self.get_df(func=EvolutionAnalyzer.rdf, pair=pair)
         x_label, cb_label = f"$r$ ({pair[0]}-{pair[1]}) ($\\rm\\AA$)", "$g(r)$"
-        p = self.plot_evolution_from_data(df=df, x_label=x_label, cb_label=cb_label, cmap=cmap)
-
-        return p
+        return self.plot_evolution_from_data(df=df, x_label=x_label, cb_label=cb_label, cmap=cmap)
 
     def plot_atomic_evolution(
         self,
         specie: str,
         direction: str = "c",
         cmap=plt.cm.Blues,  # pylint: disable=E1101
-        df: pds.DataFrame = None,
+        df: pd.DataFrame = None,
     ):
         """
         Plot the atomic distribution evolution with time for a given species.
@@ -562,6 +574,7 @@ class EvolutionAnalyzer:
             cmap (color map): the color map used in heat map.
             df (DataFrame): external data, index is the atomic distance in
                          Angstrom, and column is the time step in ps.
+
         Returns:
             matplotlib.axes._subplots.AxesSubplot object
         """
@@ -571,5 +584,4 @@ class EvolutionAnalyzer:
             f"Atomic distribution along {direction}",
             "Probability",
         )
-        p = self.plot_evolution_from_data(df=df, x_label=x_label, cb_label=cb_label, cmap=cmap)
-        return p
+        return self.plot_evolution_from_data(df=df, x_label=x_label, cb_label=cb_label, cmap=cmap)

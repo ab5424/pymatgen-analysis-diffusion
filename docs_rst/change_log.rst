@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+v2024.6.25
+----------
+* Fix broken code due to pymatgen and matplotlib deprecated methods.
+
+v2023.8.15
+----------
+* Complete migration of pymatgen.analysis.pathfinder over to pymatgen-analysis.diffusion.
+
 v2022.4.22
 ----------
 * Make MigrationHop MSONAble. (@acrutt)

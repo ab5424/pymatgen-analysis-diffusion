@@ -1,9 +1,8 @@
 # Copyright (c) Materials Virtual Lab.
 # Distributed under the terms of the BSD License.
 
-"""
-RDF implementation.
-"""
+"""RDF implementation."""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -51,7 +50,6 @@ class RadialDistributionFunction:
             reference_indices ([int]): set this option along with 'indices'
                 parameter to compute radial distribution function.
         """
-
         if ngrid < 2:
             raise ValueError("ngrid should be greater than 1!")
         if sigma <= 0:
@@ -195,7 +193,7 @@ class RadialDistributionFunction:
     @property
     def coordination_number(self):
         """
-        returns running coordination number
+        returns running coordination number.
 
         Returns:
             numpy array
@@ -220,21 +218,17 @@ class RadialDistributionFunction:
             ylim (list): Set the y limits of the current axes.
             loc_peak (bool): Label peaks if True.
         """
-
         if label is None:
-            symbol_list = [e.symbol for e in self.structures[0].composition.keys()]
+            symbol_list = [e.symbol for e in self.structures[0].composition]
             symbol_list = [symbol for symbol in symbol_list if symbol in self.species]
 
-            if len(symbol_list) == 1:
-                label = symbol_list[0]
-            else:
-                label = "-".join(symbol_list)
+            label = symbol_list[0] if len(symbol_list) == 1 else "-".join(symbol_list)
 
-        plt = pretty_plot(12, 8)
-        plt.plot(self.interval, self.rdf, label=label, linewidth=4.0, zorder=1)
+        ax = pretty_plot(12, 8)
+        ax.plot(self.interval, self.rdf, label=label, linewidth=4.0, zorder=1)
 
         if loc_peak:
-            plt.scatter(
+            ax.scatter(
                 self.peak_r,
                 self.peak_rdf,
                 marker="P",
@@ -246,14 +240,13 @@ class RadialDistributionFunction:
                 label="Peaks",
             )
 
-        plt.xlabel("$r$ ($\\rm\\AA$)")
-        plt.ylabel("$g(r)$")
-        plt.legend(loc="upper right", fontsize=36)
-        plt.xlim(xlim[0], xlim[1])
-        plt.ylim(ylim[0], ylim[1])
-        plt.tight_layout()
+        ax.set_xlabel("$r$ ($\\rm\\AA$)")
+        ax.set_ylabel("$g(r)$")
+        ax.legend(loc="upper right", fontsize=36)
+        ax.set_xlim(xlim[0], xlim[1])
+        ax.set_ylim(ylim[0], ylim[1])
 
-        return plt
+        return ax
 
     def export_rdf(self, filename: str):
         """
@@ -278,9 +271,7 @@ class RadialDistributionFunction:
 
 
 class RadialDistributionFunctionFast:
-    """
-    Fast radial distribution analysis.
-    """
+    """Fast radial distribution analysis."""
 
     def __init__(
         self,
@@ -361,10 +352,11 @@ class RadialDistributionFunctionFast:
 
     def _dist_to_counts(self, d):
         """
-        Convert a distance array for counts in the bin
+        Convert a distance array for counts in the bin.
 
         Args:
             d: (1D np.array)
+
         Returns:
             1D array of counts in the bins centered on self.r
         """
@@ -388,7 +380,7 @@ class RadialDistributionFunctionFast:
             species (list of species or just single specie str): the species that we are interested in.
                 The rdfs are calculated on these species.
             is_average (bool): whether to take the average over
-                all structures
+                all structures.
 
         Returns:
             (x, rdf) x is the radial points, and rdf is the rdf value.
@@ -412,7 +404,7 @@ class RadialDistributionFunctionFast:
     ):
         """
         Get the RDF for one structure, indicated by the index of the structure
-        in all structures
+        in all structures.
 
         Args:
             ref_species (list of species or just single specie str): the reference species.
@@ -449,7 +441,7 @@ class RadialDistributionFunctionFast:
 
     def get_coordination_number(self, ref_species, species, is_average=True):
         """
-        returns running coordination number
+        returns running coordination number.
 
         Args:
             ref_species (list of species or just single specie str): the reference species.
@@ -474,7 +466,7 @@ class RadialDistributionFunctionFast:
 
 def _get_neighbor_list(structure, r) -> tuple:
     """
-    Thin wrapper to enable parallel calculations
+    Thin wrapper to enable parallel calculations.
 
     Args:
         structure (pymatgen Structure): pymatgen structure

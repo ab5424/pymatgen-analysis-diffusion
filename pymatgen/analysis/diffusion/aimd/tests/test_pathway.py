@@ -1,5 +1,6 @@
 # Copyright (c) Materials Virtual Lab.
 # Distributed under the terms of the BSD License.
+from __future__ import annotations
 
 __author__ = "Iek-Heng Chu"
 __date__ = "01/16"
@@ -9,14 +10,11 @@ import os
 import unittest
 
 import numpy as np
+
+from pymatgen.analysis.diffusion.aimd.pathway import ProbabilityDensityAnalysis, SiteOccupancyAnalyzer
+from pymatgen.analysis.diffusion.analyzer import DiffusionAnalyzer
 from pymatgen.core import Structure
 from pymatgen.io.vasp import Chgcar
-
-from pymatgen.analysis.diffusion.aimd.pathway import (
-    ProbabilityDensityAnalysis,
-    SiteOccupancyAnalyzer,
-)
-from pymatgen.analysis.diffusion.analyzer import DiffusionAnalyzer
 
 tests_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -61,14 +59,14 @@ class ProbabilityDensityTest(unittest.TestCase):
         pda = ProbabilityDensityAnalysis.from_diffusion_analyzer(diffusion_analyzer=diff_analyzer, interval=0.1)
         pda.generate_stable_sites(p_ratio=0.25, d_cutoff=1.5)
 
-        self.assertEqual(len(pda.stable_sites), 50)
+        assert len(pda.stable_sites) == 50
         self.assertAlmostEqual(pda.stable_sites[1][2], 0.24113475177304966, 8)
         self.assertAlmostEqual(pda.stable_sites[7][1], 0.5193661971830985, 8)
 
         s = pda.get_full_structure()
-        self.assertEqual(s.num_sites, 178)
-        self.assertEqual(s.composition["Na"], 48)
-        self.assertEqual(s.composition["X"], 50)
+        assert s.num_sites == 178
+        assert s.composition["Na"] == 48
+        assert s.composition["X"] == 50
         self.assertAlmostEqual(s[177].frac_coords[2], 0.57446809)
 
     def test_to_chgcar(self):
@@ -80,7 +78,7 @@ class ProbabilityDensityTest(unittest.TestCase):
         pda = ProbabilityDensityAnalysis.from_diffusion_analyzer(diffusion_analyzer=diff_analyzer, interval=0.1)
         pda.to_chgcar("CHGCAR.PDA")
         chgcar = Chgcar.from_file("CHGCAR.PDA")
-        self.assertEqual(pda.structure.species, chgcar.structure.species)
+        assert pda.structure.species == chgcar.structure.species
         os.remove("CHGCAR.PDA")
 
 
@@ -100,7 +98,7 @@ class SiteOccupancyTest(unittest.TestCase):
         self.assertAlmostEqual(np.sum(site_occ), len(coords_ref), 12)
         self.assertAlmostEqual(site_occ[11], 0.98, 12)
         self.assertAlmostEqual(site_occ[15], 0.875, 12)
-        self.assertEqual(len(coords_ref), 48)
+        assert len(coords_ref) == 48
 
     def test_site_occupancy_classmethod(self):
         file = os.path.join(tests_dir, "cNa3PS4_pda.json")
@@ -116,8 +114,4 @@ class SiteOccupancyTest(unittest.TestCase):
         self.assertAlmostEqual(np.sum(site_occ), len(coords_ref), 12)
         self.assertAlmostEqual(site_occ[1], 0.98, 12)
         self.assertAlmostEqual(site_occ[26], 0.97, 12)
-        self.assertEqual(len(coords_ref), 48)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert len(coords_ref) == 48

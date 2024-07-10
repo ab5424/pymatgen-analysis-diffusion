@@ -1,9 +1,6 @@
-# Copyright (c) Materials Virtual Lab.
-# Distributed under the terms of the BSD License.
+"""Algorithms for diffusion pathway analysis."""
 
-"""
- Algorithms for diffusion pathway analysis
-"""
+from __future__ import annotations
 
 import itertools
 from collections import Counter
@@ -15,6 +12,8 @@ from scipy.spatial.distance import squareform
 
 class ProbabilityDensityAnalysis:
     r"""
+    Probability density analysis class.
+
     Compute the time-averaged probability density distribution of selected
     species on a "uniform" (in terms of fractional coordinates) 3-D grid.
     Note that \int_{\Omega}d^3rP(r) = 1
@@ -23,12 +22,13 @@ class ProbabilityDensityAnalysis:
 
     Zhu, Z.; Chu, I.-H.; Deng, Z. and Ong, S. P. "Role of Na+ Interstitials and
     Dopants in Enhancing the Na+ Conductivity of the Cubic Na3PS4 Superionic
-    Conductor". Chem. Mater. (2015), 27, pp 8318–8325.
+    Conductor". Chem. Mater. (2015), 27, pp 8318-8325.
     """
 
     def __init__(self, structure, trajectories, interval=0.5, species=("Li", "Na")):
         """
         Initialization.
+
         Args:
             structure (Structure): crystal structure
             trajectories (numpy array): ionic trajectories of the structure
@@ -39,17 +39,17 @@ class ProbabilityDensityAnalysis:
                 (in Angstrom)
             species(list of str): list of species that are of interest
         """
-
         # initial settings
         trajectories = np.array(trajectories)
 
         # All fractional coordinates are between 0 and 1.
         trajectories -= np.floor(trajectories)
-        assert np.all(trajectories >= 0) and np.all(trajectories <= 1)
+        assert np.all(trajectories >= 0)
+        assert np.all(trajectories <= 1)
 
         indices = [j for j, site in enumerate(structure) if site.specie.symbol in species]
         lattice = structure.lattice
-        frac_interval = [interval / l for l in lattice.abc]
+        frac_interval = [interval / length for length in lattice.abc]
         nsteps = len(trajectories)
 
         # generate the 3-D grid
@@ -130,7 +130,7 @@ class ProbabilityDensityAnalysis:
         structure = diffusion_analyzer.structure
         trajectories = []
 
-        for i, s in enumerate(diffusion_analyzer.get_drift_corrected_structures()):
+        for _i, s in enumerate(diffusion_analyzer.get_drift_corrected_structures()):
             trajectories.append(s.frac_coords)
 
         trajectories = np.array(trajectories)
@@ -142,7 +142,7 @@ class ProbabilityDensityAnalysis:
         Obtain a set of low-energy sites from probability density function with
         given probability threshold 'p_ratio'. The set of grid points with
         probability density higher than the threshold will further be clustered
-        using hierachical clustering method, with no two clusters closer than the
+        using hierarchical clustering method, with no two clusters closer than the
         given distance cutoff. Note that the low-energy sites may converge more
         slowly in fast conductors (more shallow energy landscape) than in the slow
         conductors.
@@ -150,19 +150,18 @@ class ProbabilityDensityAnalysis:
         Args:
             p_ratio (float): Probability threshold above which a grid point is
                 considered as a low-energy site.
-            d_cutoff (float): Distance cutoff used in hierachical clustering.
+            d_cutoff (float): Distance cutoff used in hierarchical clustering.
 
         Notes:
             The set of stable sites is stored in the `stable_sites` attribute
             as a Nx3 numpy array.
         """
-
         # Set of grid points with high probability density.
         grid_fcoords = []
         indices = np.where(self.Pr > self.Pr.max() * p_ratio)
         lattice = self.structure.lattice
 
-        for (x, y, z) in zip(indices[0], indices[1], indices[2]):
+        for x, y, z in zip(indices[0], indices[1], indices[2]):
             grid_fcoords.append([x / self.lens[0], y / self.lens[1], z / self.lens[2]])
 
         grid_fcoords = np.array(grid_fcoords)
@@ -172,7 +171,7 @@ class ProbabilityDensityAnalysis:
         # Compressed distance matrix
         condensed_m = squareform((dist_matrix + dist_matrix.T) / 2.0)
 
-        # Linkage function for hierachical clustering.
+        # Linkage function for hierarchical clustering.
         z = linkage(condensed_m, method="single", metric="euclidean")
         cluster_indices = fcluster(z, t=d_cutoff, criterion="distance")
 
@@ -213,7 +212,6 @@ class ProbabilityDensityAnalysis:
         Generate the structure with the low-energy sites included. In the end, a
         pymatgen Structure object will be returned.
         """
-
         full_structure = self.structure.copy()
         for fcoord in self.stable_sites:
             full_structure.append("X", fcoord)
@@ -225,7 +223,6 @@ class ProbabilityDensityAnalysis:
         Save the probability density distribution in the format of CHGCAR,
         which can be visualized by VESTA.
         """
-
         count = 1
         VolinAu = self.structure.lattice.volume / 0.5291772083**3
         syms = [site.specie.symbol for site in self.structure]
@@ -245,7 +242,11 @@ class ProbabilityDensityAnalysis:
             f.write(" " + " ".join(natoms) + "\n")
             f.write("direct\n")
             for fcoord in init_fcoords:
-                f.write(" {:.8f}  {:.8f}  {:.8f} \n".format(*fcoord))  # pylint: disable=C0209
+                f.write(
+                    " {:.8f}  {:.8f}  {:.8f} \n".format(  # pylint: disable=C0209
+                        *fcoord
+                    )
+                )
 
             f.write(" \n")
             f.write(" {} {} {} \n".format(*self.lens))  # pylint: disable=C0209
@@ -292,7 +293,6 @@ class SiteOccupancyAnalyzer:
                 simulation. Note that the coordinates are fractional.
             species(list of str): list of species that are of interest.
         """
-
         lattice = structure.lattice
         coords_ref = np.array(coords_ref)
         trajectories = np.array(trajectories)
@@ -319,14 +319,11 @@ class SiteOccupancyAnalyzer:
         self.site_occ = site_occ
 
     def get_average_site_occupancy(self, indices):
-        """
-        Get the average site occupancy over a subset of reference sites.
-        """
+        """Get the average site occupancy over a subset of reference sites."""
         return np.sum(self.site_occ[indices]) / len(indices)
 
     @classmethod
     def from_diffusion_analyzer(cls, coords_ref, diffusion_analyzer, species=("Li", "Na")):
-
         """
         Create a SiteOccupancyAnalyzer object using a diffusion_analyzer object.
 
@@ -337,7 +334,6 @@ class SiteOccupancyAnalyzer:
                 pymatgen.analysis.diffusion_analyzer.DiffusionAnalyzer object
             species(list of str): list of species that are of interest.
         """
-
         trajectories = []
 
         # Initial structure.
