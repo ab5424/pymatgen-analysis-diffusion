@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import multiprocessing
 import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy.constants as const
@@ -28,6 +29,9 @@ from pymatgen.core.periodic_table import get_el_sp
 from pymatgen.core.structure import Structure
 from pymatgen.io.vasp.outputs import Vasprun
 from pymatgen.util.coord import pbc_diff
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 __author__ = "Will Richards, Shyue Ping Ong"
 __version__ = "0.2"
@@ -127,15 +131,15 @@ class DiffusionAnalyzer(MSONable):
 
     def __init__(
         self,
-        structure,
+        structure: Structure,
         displacements,
         specie,
-        temperature,
-        time_step,
-        step_skip,
-        smoothed="max",
-        min_obs=30,
-        avg_nsteps=1000,
+        temperature: float,
+        time_step: int,
+        step_skip: int,
+        smoothed: str = "max",
+        min_obs: int = 30,
+        avg_nsteps: int = 1000,
         lattices=None,
         c_ranges=None,
         c_range_include_edge=False,
@@ -222,7 +226,7 @@ class DiffusionAnalyzer(MSONable):
         if lattices is None:
             self.lattices = np.array([structure.lattice.matrix.tolist()])
 
-        indices = []
+        indices: list = []
         framework_indices = []
         for i, site in enumerate(structure):
             if site.specie.symbol == specie:
@@ -378,7 +382,9 @@ class DiffusionAnalyzer(MSONable):
             self.indices = indices
             self.framework_indices = framework_indices
 
-    def get_drift_corrected_structures(self, start=None, stop=None, step=None):
+    def get_drift_corrected_structures(
+        self, start: int | None = None, stop: int | None = None, step: int | None = None
+    ):
         """
         Returns an iterator for the drift-corrected structures. Use of
         iterator is to reduce memory usage as # of structures in MD can be
@@ -405,7 +411,7 @@ class DiffusionAnalyzer(MSONable):
                 coords_are_cartesian=True,
             )
 
-    def get_summary_dict(self, include_msd_t=False, include_mscd_t=False):
+    def get_summary_dict(self, include_msd_t: bool = False, include_mscd_t: bool = False):
         """
         Provides a summary of diffusion information.
 
@@ -445,7 +451,7 @@ class DiffusionAnalyzer(MSONable):
             d["mscd"] = self.mscd.tolist()
         return d
 
-    def get_framework_rms_plot(self, granularity=200, matching_s=None):
+    def get_framework_rms_plot(self, granularity: int = 200, matching_s: Structure = None):
         """
         Get the plot of rms framework displacement vs time. Useful for checking
         for melting, especially if framework atoms can move via paddle-wheel
@@ -476,22 +482,22 @@ class DiffusionAnalyzer(MSONable):
             comparator=OrderDisorderElementComparator(),
             allow_subset=True,
         )
-        rms = []
+        _rms = []
         for s in self.get_drift_corrected_structures(step=step):
             s.remove_species([self.specie])
             d = sm.get_rms_dist(f, s)
             if d:
-                rms.append(d)
+                _rms.append(d)
             else:
-                rms.append((1, 1))
-        max_dt = (len(rms) - 1) * step * self.step_skip * self.time_step
+                _rms.append((1, 1))
+        max_dt = (len(_rms) - 1) * step * self.step_skip * self.time_step
         if max_dt > 100000:
-            plot_dt = np.linspace(0, max_dt / 1000, len(rms))
+            plot_dt = np.linspace(0, max_dt / 1000, len(_rms))
             unit = "ps"
         else:
-            plot_dt = np.linspace(0, max_dt, len(rms))
+            plot_dt = np.linspace(0, max_dt, len(_rms))
             unit = "fs"
-        rms = np.array(rms)
+        rms = np.array(_rms)
         ax.plot(plot_dt, rms[:, 0], label="RMS")
         ax.plot(plot_dt, rms[:, 1], label="max")
         ax.legend(loc="best")
@@ -499,7 +505,7 @@ class DiffusionAnalyzer(MSONable):
         ax.set_ylabel("normalized distance")
         return ax
 
-    def get_msd_plot(self, mode="specie"):
+    def get_msd_plot(self, mode: str = "specie"):
         """
         Get the plot of the smoothed msd vs time graph. Useful for
         checking convergence. This can be written to an image file.
@@ -548,7 +554,7 @@ class DiffusionAnalyzer(MSONable):
             ax.set_ylabel("MSD ($\\AA^2$)")
         return ax
 
-    def plot_msd(self, mode="default"):
+    def plot_msd(self, mode: str = "default"):
         """
         Plot the smoothed msd vs time graph. Useful for checking convergence.
 
@@ -561,7 +567,7 @@ class DiffusionAnalyzer(MSONable):
         """
         self.get_msd_plot(mode=mode).show()
 
-    def export_msdt(self, filename):
+    def export_msdt(self, filename: str):
         """
         Writes MSD data to a csv file that can be easily plotted in other
         software.
@@ -585,11 +591,11 @@ class DiffusionAnalyzer(MSONable):
     @classmethod
     def from_structures(
         cls,
-        structures,
+        structures: list[Structure],
         specie,
-        temperature,
-        time_step,
-        step_skip,
+        temperature: float,
+        time_step: int,
+        step_skip: int,
         initial_disp=None,
         initial_structure=None,
         **kwargs,
@@ -622,29 +628,29 @@ class DiffusionAnalyzer(MSONable):
             **kwargs: kwargs supported by the :class:`DiffusionAnalyzer`_.
                 Examples include smoothed, min_obs, avg_nsteps.
         """
-        p, lattices = [], []
+        _p, _lattices = [], []
         structure = structures[0]
         for s in structures:
-            p.append(np.array(s.frac_coords)[:, None])
-            lattices.append(s.lattice.matrix)
+            _p.append(np.array(s.frac_coords)[:, None])
+            _lattices.append(s.lattice.matrix)
         if initial_structure is not None:
-            p.insert(0, np.array(initial_structure.frac_coords)[:, None])
-            lattices.insert(0, initial_structure.lattice.matrix)
+            _p.insert(0, np.array(initial_structure.frac_coords)[:, None])
+            _lattices.insert(0, initial_structure.lattice.matrix)
         else:
-            p.insert(0, p[0])
-            lattices.insert(0, lattices[0])
+            _p.insert(0, _p[0])
+            _lattices.insert(0, _lattices[0])
 
-        p = np.concatenate(p, axis=1)
+        p = np.concatenate(_p, axis=1)
         dp = p[:, 1:] - p[:, :-1]
         dp = dp - np.round(dp)
         f_disp = np.cumsum(dp, axis=1)
         c_disp = []
         for i in f_disp:
-            c_disp.append([np.dot(d, m) for d, m in zip(i, lattices[1:])])
+            c_disp.append([np.dot(d, m) for d, m in zip(i, _lattices[1:])])
         disp = np.array(c_disp)
 
         # If is NVT-AIMD, clear lattice data.
-        lattices = np.array([lattices[0]]) if np.array_equal(lattices[0], lattices[-1]) else np.array(lattices)
+        lattices = np.array([_lattices[0]]) if np.array_equal(_lattices[0], _lattices[-1]) else np.array(_lattices)
         if initial_disp is not None:
             disp += initial_disp[:, None, :]
 
@@ -660,7 +666,9 @@ class DiffusionAnalyzer(MSONable):
         )
 
     @classmethod
-    def from_vaspruns(cls, vaspruns, specie, initial_disp=None, initial_structure=None, **kwargs):
+    def from_vaspruns(
+        cls, vaspruns: list[Vasprun], specie, initial_disp=None, initial_structure: Structure = None, **kwargs
+    ):
         r"""
         Convenient constructor that takes in a list of Vasprun objects to
         perform diffusion analysis.
@@ -722,10 +730,10 @@ class DiffusionAnalyzer(MSONable):
         cls,
         filepaths,
         specie,
-        step_skip=10,
-        ncores=None,
+        step_skip: int = 10,
+        ncores: int | None = None,
         initial_disp=None,
-        initial_structure=None,
+        initial_structure: Structure = None,
         **kwargs,
     ):
         r"""
@@ -767,7 +775,7 @@ class DiffusionAnalyzer(MSONable):
             with multiprocessing.Pool(ncores) as p:
                 vaspruns = p.imap(_get_vasprun, [(fp, step_skip) for fp in filepaths])
                 return cls.from_vaspruns(
-                    vaspruns,
+                    list(vaspruns),
                     specie=specie,
                     initial_disp=initial_disp,
                     initial_structure=initial_structure,
@@ -808,7 +816,7 @@ class DiffusionAnalyzer(MSONable):
         }
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: dict):
         """
         Args:
             d (dict): Dict representation.
@@ -830,7 +838,7 @@ class DiffusionAnalyzer(MSONable):
         )
 
 
-def get_conversion_factor(structure, species, temperature):
+def get_conversion_factor(structure: Structure, species, temperature: float):
     """
     Conversion factor to convert between cm^2/s diffusivity measurements and
     mS/cm conductivity measurements based on number of atoms of diffusing
@@ -861,7 +869,7 @@ def _get_vasprun(args):
     return Vasprun(args[0], ionic_step_skip=args[1], parse_dos=False, parse_eigen=False)
 
 
-def fit_arrhenius(temps, diffusivities):
+def fit_arrhenius(temps: Sequence[float], diffusivities: Sequence[float]):
     """
     Returns Ea, c, standard error of Ea from the Arrhenius fit.
         D = c * exp(-Ea/kT).
@@ -882,7 +890,7 @@ def fit_arrhenius(temps, diffusivities):
     return -w[0] * const.k / const.e, np.exp(w[1]), std_Ea
 
 
-def get_diffusivity_from_msd(msd, dt, smoothed="max"):
+def get_diffusivity_from_msd(msd: Sequence[float], dt, smoothed: str = "max"):
     """
     Returns diffusivity and standard deviation of diffusivity.
 
@@ -943,7 +951,7 @@ def get_diffusivity_from_msd(msd, dt, smoothed="max"):
     return diffusivity, diffusivity_std_dev
 
 
-def get_extrapolated_diffusivity(temps, diffusivities, new_temp):
+def get_extrapolated_diffusivity(temps: Sequence[float], diffusivities: Sequence[float], new_temp: float):
     """
     Returns (Arrhenius) extrapolated diffusivity at new_temp.
 
