@@ -927,6 +927,26 @@ def get_diffusivity_from_msd(msd, dt, smoothed="max"):
     return diffusivity, diffusivity_std_dev
 
 
+def get_statistical_error(z, nu_0, n_vac, Ea, f, t_sim, temp):
+    """
+    Returns the statistical error in the diffusivity, given by:
+
+    Args:
+        z (float): Coordnation number within the sublattice (i.e., the number of adjacent sites to jump into.)
+        nu_0 (float): Attempt frequency. units: 1/s
+        n_vac (int): Number of tracers.
+        Ea (float): Activation energy. units: eV
+        f (float): Tracer correlation factor.
+        t_sim (float): Simulation time. units: fs
+        temp (float): Temperature. units: K
+    """
+
+    jump_rate = nu_0 * np.exp(-Ea / (const.k / const.e * np.array(temp)))
+    n_jumps = z * jump_rate * f * t_sim/1e15 * n_vac
+
+    return np.sqrt(2 / (n_jumps * 3))
+
+
 def get_extrapolated_diffusivity(temps, diffusivities, new_temp):
     """
     Returns (Arrhenius) extrapolated diffusivity at new_temp
