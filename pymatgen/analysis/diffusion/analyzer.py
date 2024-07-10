@@ -956,11 +956,23 @@ def get_statistical_error(z, nu_0, n_vac, Ea, f, t_sim, temp):
         t_sim (float): Simulation time. units: fs
         temp (float): Temperature. units: K
     """
-
     jump_rate = nu_0 * np.exp(-Ea / (const.k / const.e * np.array(temp)))
-    n_jumps = z * jump_rate * f * t_sim/1e15 * n_vac
+    n_jumps = z * jump_rate * f * t_sim / 1e15 * n_vac
 
     return np.sqrt(2 / (n_jumps * 3))
+
+
+def get_statistical_error_from_msd(d: int, n_k: int, msd: float, s: float):
+    """
+    Returns the statistical error in the diffusivity, given by:
+
+    Args:
+        d (int): Dimensionality of the system.
+        n_k (int): Number of k-points.
+        msd (float): Mean square displacement. units: Å^2
+        s (float): Simulation time. units: fs
+    """
+    return np.sqrt(2 / (d * n_k * (1 - np.exp(-msd / s**2))))
 
 
 def get_extrapolated_diffusivity(temps, diffusivities, new_temp):
