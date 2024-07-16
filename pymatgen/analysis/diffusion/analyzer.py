@@ -34,6 +34,8 @@ from pymatgen.util.coord import pbc_diff
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from pymatgen.util.typing import SpeciesLike
+
 __author__ = "Will Richards, Shyue Ping Ong"
 __version__ = "0.2"
 __maintainer__ = "Will Richards"
@@ -133,19 +135,19 @@ class DiffusionAnalyzer(MSONable):
     def __init__(
         self,
         structure: Structure,
-        displacements,
-        specie,
+        displacements: np.ndarray,
+        specie: SpeciesLike,
         temperature: float,
         time_step: int,
         step_skip: int,
-        smoothed: str = "max",
+        smoothed: bool | str = "max",
         min_obs: int = 30,
         avg_nsteps: int = 1000,
         lattices=None,
         c_ranges=None,
         c_range_include_edge=False,
         structures=None,
-    ):
+    ) -> None:
         """
         This constructor is meant to be used with pre-processed data.
         Other convenient constructors are provided as class methods (see
@@ -555,7 +557,7 @@ class DiffusionAnalyzer(MSONable):
             ax.set_ylabel("MSD ($\\AA^2$)")
         return ax
 
-    def plot_msd(self, mode: str = "default"):
+    def plot_msd(self, mode: str = "default") -> None:
         """
         Plot the smoothed msd vs time graph. Useful for checking convergence.
 
@@ -568,7 +570,7 @@ class DiffusionAnalyzer(MSONable):
         """
         self.get_msd_plot(mode=mode).show()
 
-    def export_msdt(self, filename: str):
+    def export_msdt(self, filename: str) -> None:
         """
         Writes MSD data to a csv file that can be easily plotted in other
         software.
@@ -593,7 +595,7 @@ class DiffusionAnalyzer(MSONable):
     def from_structures(
         cls,
         structures: list[Structure],
-        specie,
+        specie: SpeciesLike,
         temperature: float,
         time_step: int,
         step_skip: int,
@@ -915,7 +917,7 @@ def fit_arrhenius(
     return None
 
 
-def get_diffusivity_from_msd(msd: Sequence[float], dt, smoothed: str = "max"):
+def get_diffusivity_from_msd(msd: Sequence[float], dt, smoothed: bool | str = "max"):
     """
     Returns diffusivity and standard deviation of diffusivity.
 

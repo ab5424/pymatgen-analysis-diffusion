@@ -166,7 +166,7 @@ def get_inserted_on_base(
     inserted_ent: ComputedStructureEntry,
     migrating_ion_entry: ComputedEntry,
     sm: StructureMatcher,
-) -> Structure | None:
+):
     """
     For a structured-matched pair of base and inserted entries, map all of the Li
     positions in the inserted entry to positions in the base entry and return a new

@@ -24,14 +24,14 @@ __date__ = "3/18/15"
 class Kmeans:
     """Simple kmeans clustering."""
 
-    def __init__(self, max_iterations: int = 1000):
+    def __init__(self, max_iterations: int = 1000) -> None:
         """
         Args:
             max_iterations (int): Maximum number of iterations to run KMeans algo.
         """
         self.max_iterations = max_iterations
 
-    def cluster(self, points, k, initial_centroids=None):
+    def cluster(self, points, k: int, initial_centroids=None):
         """
         Args:
             points (ndarray): Data points as a mxn ndarray, where m is the
@@ -127,7 +127,7 @@ class KmeansPBC(Kmeans):
     fractional coordinates.
     """
 
-    def __init__(self, lattice, max_iterations=1000):
+    def __init__(self, lattice, max_iterations=1000) -> None:
         """
         Args:
             lattice: Lattice
@@ -179,7 +179,7 @@ class KmeansPBC(Kmeans):
             new_centroids.append(c)
         return np.array(new_centroids)
 
-    def should_stop(self, old_centroids, centroids, iterations):
+    def should_stop(self, old_centroids, centroids, iterations) -> bool:
         """
         Check for stopping conditions.
 
@@ -196,7 +196,7 @@ class KmeansPBC(Kmeans):
         return all(np.allclose(pbc_diff(c1, c2), [0, 0, 0]) for c1, c2 in zip(old_centroids, centroids))
 
 
-def get_random_centroid(points):
+def get_random_centroid(points: np.ndarray) -> np.ndarray:
     """
     Generate a random centroid based on points.
 
@@ -209,7 +209,7 @@ def get_random_centroid(points):
     return np.array([random.uniform(mind[i], maxd[i]) for i in range(n)])
 
 
-def get_random_centroids(points, k):
+def get_random_centroids(points: np.ndarray, k: int) -> np.ndarray:
     """
     Generate k random centroids based on points.
 

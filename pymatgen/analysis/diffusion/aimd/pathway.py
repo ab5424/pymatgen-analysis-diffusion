@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import itertools
 from collections import Counter
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import squareform
+
+if TYPE_CHECKING:
+    from pymatgen.analysis.diffusion.analyzer import DiffusionAnalyzer
+    from pymatgen.core.structure import Structure
+    from pymatgen.util.typing import PathLike
 
 
 class ProbabilityDensityAnalysis:
@@ -25,7 +31,13 @@ class ProbabilityDensityAnalysis:
     Conductor". Chem. Mater. (2015), 27, pp 8318-8325.
     """
 
-    def __init__(self, structure, trajectories, interval=0.5, species=("Li", "Na")):
+    def __init__(
+        self,
+        structure: Structure,
+        trajectories: np.ndarray,
+        interval: float = 0.5,
+        species: tuple = ("Li", "Na"),
+    ) -> None:
         """
         Initialization.
 
@@ -66,7 +78,7 @@ class ProbabilityDensityAnalysis:
         grid = agrid[:, None, None] + bgrid[None, :, None] + cgrid[None, None, :]
 
         # Calculate time-averaged probability density function distribution Pr
-        count = Counter()
+        count: Counter = Counter()
         Pr = np.zeros(ngrid, dtype=np.double)
 
         for it in range(nsteps):
@@ -116,7 +128,9 @@ class ProbabilityDensityAnalysis:
         self.stable_sites = None
 
     @classmethod
-    def from_diffusion_analyzer(cls, diffusion_analyzer, interval=0.5, species=("Li", "Na")):
+    def from_diffusion_analyzer(
+        cls, diffusion_analyzer: DiffusionAnalyzer, interval: float = 0.5, species: tuple = ("Li", "Na")
+    ):
         """
         Create a ProbabilityDensityAnalysis from a diffusion_analyzer object.
 
@@ -137,7 +151,7 @@ class ProbabilityDensityAnalysis:
 
         return ProbabilityDensityAnalysis(structure, trajectories, interval=interval, species=species)
 
-    def generate_stable_sites(self, p_ratio=0.25, d_cutoff=1.0):
+    def generate_stable_sites(self, p_ratio: float = 0.25, d_cutoff: float = 1.0) -> None:
         """
         Obtain a set of low-energy sites from probability density function with
         given probability threshold 'p_ratio'. The set of grid points with
@@ -157,14 +171,14 @@ class ProbabilityDensityAnalysis:
             as a Nx3 numpy array.
         """
         # Set of grid points with high probability density.
-        grid_fcoords = []
+        _grid_fcoords = []
         indices = np.where(self.Pr > self.Pr.max() * p_ratio)
         lattice = self.structure.lattice
 
         for x, y, z in zip(indices[0], indices[1], indices[2]):
-            grid_fcoords.append([x / self.lens[0], y / self.lens[1], z / self.lens[2]])
+            _grid_fcoords.append([x / self.lens[0], y / self.lens[1], z / self.lens[2]])
 
-        grid_fcoords = np.array(grid_fcoords)
+        grid_fcoords = np.array(_grid_fcoords)
         dist_matrix = np.array(lattice.get_all_distances(grid_fcoords, grid_fcoords))
         np.fill_diagonal(dist_matrix, 0)
 
@@ -218,7 +232,7 @@ class ProbabilityDensityAnalysis:
 
         return full_structure
 
-    def to_chgcar(self, filename="CHGCAR.vasp"):
+    def to_chgcar(self, filename: PathLike = "CHGCAR.vasp") -> None:
         """
         Save the probability density distribution in the format of CHGCAR,
         which can be visualized by VESTA.
@@ -282,7 +296,9 @@ class SiteOccupancyAnalyzer:
 
     """
 
-    def __init__(self, structure, coords_ref, trajectories, species=("Li", "Na")):
+    def __init__(
+        self, structure: Structure, coords_ref: np.ndarray, trajectories: np.ndarray, species: tuple = ("Li", "Na")
+    ) -> None:
         """
         Args:
             structure (pmg_structure): Initial structure.
@@ -296,7 +312,7 @@ class SiteOccupancyAnalyzer:
         lattice = structure.lattice
         coords_ref = np.array(coords_ref)
         trajectories = np.array(trajectories)
-        count = Counter()
+        count: Counter = Counter()
 
         indices = [i for i, site in enumerate(structure) if site.specie.symbol in species]
 
@@ -318,12 +334,14 @@ class SiteOccupancyAnalyzer:
         self.nsteps = len(trajectories)
         self.site_occ = site_occ
 
-    def get_average_site_occupancy(self, indices):
+    def get_average_site_occupancy(self, indices: list) -> float:
         """Get the average site occupancy over a subset of reference sites."""
         return np.sum(self.site_occ[indices]) / len(indices)
 
     @classmethod
-    def from_diffusion_analyzer(cls, coords_ref, diffusion_analyzer, species=("Li", "Na")):
+    def from_diffusion_analyzer(
+        cls, coords_ref: np.ndarray, diffusion_analyzer: DiffusionAnalyzer, species: tuple = ("Li", "Na")
+    ):
         """
         Create a SiteOccupancyAnalyzer object using a diffusion_analyzer object.
 

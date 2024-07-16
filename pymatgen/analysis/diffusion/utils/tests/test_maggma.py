@@ -24,7 +24,7 @@ def maggma_stores():
     }
 
 
-def test(maggma_stores):
+def test(maggma_stores) -> None:
     base_ents, inserted_ents = get_entries_from_dbs(
         maggma_stores["sgroups"],
         maggma_stores["materials"],

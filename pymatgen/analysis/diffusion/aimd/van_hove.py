@@ -51,7 +51,7 @@ class VanHoveAnalysis:
         species: tuple | list = ("Li", "Na"),
         reference_species: tuple | list | None = None,
         indices: list | None = None,
-    ):
+    ) -> None:
         """
         Initiation.
 
@@ -198,7 +198,7 @@ class VanHoveAnalysis:
         # time interval (in ps) in gsrt and gdrt.
         self.timeskip = self.obj.time_step * self.obj.step_skip * step_skip / 1000.0
 
-    def get_3d_plot(self, figsize: tuple = (12, 8), mode: str = "distinct"):
+    def get_3d_plot(self, figsize: tuple = (12, 8), mode: str = "distinct") -> plt.Axes:
         """
         Plot 3D self-part or distinct-part of van Hove function, which is
         specified by the input argument 'type'.
@@ -253,7 +253,7 @@ class VanHoveAnalysis:
         mode: str = "distinct",
         times: list | None = None,
         colors: list | None = None,
-    ):
+    ) -> plt.Axes:
         """
         Plot the van Hove function at given r or t.
 
@@ -307,7 +307,7 @@ class VanHoveAnalysis:
 class EvolutionAnalyzer:
     """Analyze the evolution of structures during AIMD simulations."""
 
-    def __init__(self, structures: list, rmax: float = 10, step: int = 1, time_step: int = 2):
+    def __init__(self, structures: list, rmax: float = 10, step: int = 1, time_step: int = 2) -> None:
         """
         Initialization the EvolutionAnalyzer from MD simulations. From the
         structures obtained from MD simulations, we can analyze the structure
@@ -352,7 +352,7 @@ class EvolutionAnalyzer:
         return list(pairs)
 
     @staticmethod
-    def rdf(structure: Structure, pair: tuple, ngrid: int = 101, rmax: float = 10):
+    def rdf(structure: Structure, pair: tuple, ngrid: int = 101, rmax: float = 10) -> np.array:
         """
         Process rdf from a given structure and pair.
 
@@ -383,7 +383,7 @@ class EvolutionAnalyzer:
         ngrid: int = 101,
         window: float = 1,
         direction: str = "c",
-    ):
+    ) -> np.array:
         """
         Get atomic distribution for a given specie.
 
@@ -419,7 +419,7 @@ class EvolutionAnalyzer:
 
         return np.array(density)
 
-    def get_df(self, func: Callable, save_csv: str | None = None, **kwargs):
+    def get_df(self, func: Callable, save_csv: str | None = None, **kwargs) -> pd.DataFrame:
         """
         Get the data frame for a given pair. This step would be very slow if
         there are hundreds or more structures to parse.
@@ -460,7 +460,7 @@ class EvolutionAnalyzer:
         return df
 
     @staticmethod
-    def get_min_dist(df: pd.DataFrame, tol: float = 1e-10):
+    def get_min_dist(df: pd.DataFrame, tol: float = 1e-10) -> float:
         """
         Get the shortest pair distance from the given DataFrame.
 
@@ -485,7 +485,7 @@ class EvolutionAnalyzer:
         x_label: str | None = None,
         cb_label: str | None = None,
         cmap=plt.cm.plasma,  # pylint: disable=E1101
-    ):
+    ) -> plt.Axes:
         """
         Plot the evolution with time for a given DataFrame. It can be RDF,
         atomic distribution or other characterization data we might
@@ -539,7 +539,7 @@ class EvolutionAnalyzer:
         pair: tuple,
         cmap=plt.cm.plasma,  # pylint: disable=E1101
         df: pd.DataFrame = None,
-    ):
+    ) -> plt.Axes:
         """
         Plot the RDF evolution with time for a given pair.
 
@@ -564,7 +564,7 @@ class EvolutionAnalyzer:
         direction: str = "c",
         cmap=plt.cm.Blues,  # pylint: disable=E1101
         df: pd.DataFrame = None,
-    ):
+    ) -> plt.Axes:
         """
         Plot the atomic distribution evolution with time for a given species.
 

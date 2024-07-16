@@ -20,7 +20,7 @@ tests_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class ProbabilityDensityTest(unittest.TestCase):
-    def test_probability(self):
+    def test_probability(self) -> None:
         traj_file = os.path.join(tests_dir, "cNa3PS4_trajectories.npy")
         struc_file = os.path.join(tests_dir, "cNa3PS4.cif")
 
@@ -36,7 +36,7 @@ class ProbabilityDensityTest(unittest.TestCase):
         self.assertAlmostEqual(pda.Pr.min(), 0.0, 12)
         self.assertAlmostEqual(Pr_tot, 1.0, 12)
 
-    def test_probability_classmethod(self):
+    def test_probability_classmethod(self) -> None:
         file = os.path.join(tests_dir, "cNa3PS4_pda.json")
         data = json.load(open(file))
         diff_analyzer = DiffusionAnalyzer.from_dict(data)
@@ -50,7 +50,7 @@ class ProbabilityDensityTest(unittest.TestCase):
         self.assertAlmostEqual(pda.Pr.min(), 0.0, 12)
         self.assertAlmostEqual(Pr_tot, 1.0, 12)
 
-    def test_generate_stable_sites(self):
+    def test_generate_stable_sites(self) -> None:
         file = os.path.join(tests_dir, "cNa3PS4_pda.json")
         data = json.load(open(file))
         diff_analyzer = DiffusionAnalyzer.from_dict(data)
@@ -69,7 +69,7 @@ class ProbabilityDensityTest(unittest.TestCase):
         assert s.composition["X"] == 50
         self.assertAlmostEqual(s[177].frac_coords[2], 0.57446809)
 
-    def test_to_chgcar(self):
+    def test_to_chgcar(self) -> None:
         file = os.path.join(tests_dir, "cNa3PS4_pda.json")
         data = json.load(open(file))
         diff_analyzer = DiffusionAnalyzer.from_dict(data)
@@ -83,7 +83,7 @@ class ProbabilityDensityTest(unittest.TestCase):
 
 
 class SiteOccupancyTest(unittest.TestCase):
-    def test_site_occupancy(self):
+    def test_site_occupancy(self) -> None:
         traj_file = os.path.join(tests_dir, "cNa3PS4_trajectories.npy")
         struc_file = os.path.join(tests_dir, "cNa3PS4.cif")
 
@@ -100,7 +100,7 @@ class SiteOccupancyTest(unittest.TestCase):
         self.assertAlmostEqual(site_occ[15], 0.875, 12)
         assert len(coords_ref) == 48
 
-    def test_site_occupancy_classmethod(self):
+    def test_site_occupancy_classmethod(self) -> None:
         file = os.path.join(tests_dir, "cNa3PS4_pda.json")
         data = json.load(open(file))
         diff_analyzer = DiffusionAnalyzer.from_dict(data)

@@ -18,6 +18,8 @@ from typing import TYPE_CHECKING, Callable
 import numpy as np
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from networkx.classes.graph import Graph
 
     from pymatgen.analysis.graphs import StructureGraph
@@ -127,7 +129,7 @@ def periodic_dijkstra_on_sgraph(
     weight: str = "weight",
     max_image: int = 1,
     target_reached: Callable = lambda idx, jimage: False,
-):
+) -> tuple:
     """
     Find the lowest cost pathway from a source point in the periodic graph.
     Since the search can move many cells away without finding the target
@@ -157,7 +159,7 @@ def periodic_dijkstra_on_sgraph(
     return best_ans, path_parent
 
 
-def get_optimal_pathway_rev(path_parent: dict, leaf_node: tuple):
+def get_optimal_pathway_rev(path_parent: dict, leaf_node: tuple) -> Generator:
     """Follow a leaf node all the way up to source."""
     cur = leaf_node
     while cur in path_parent:

@@ -24,7 +24,7 @@ def get_path(path_str, dirname="./"):
 class MVLCINEBEndPointSetTest(unittest.TestCase):
     endpoint = Structure.from_file(get_path("POSCAR0", dirname="io_files"))
 
-    def test_incar(self):
+    def test_incar(self) -> None:
         m = MVLCINEBEndPointSet(self.endpoint)
         incar_string = m.incar.get_str(sort_keys=True, pretty=True)
         incar_expect = """ALGO     =  Fast
@@ -51,7 +51,7 @@ PREC     =  Accurate
 SIGMA    =  0.05"""
         assert incar_string == incar_expect
 
-    def test_incar_user_setting(self):
+    def test_incar_user_setting(self) -> None:
         user_incar_settings = {
             "ALGO": "Normal",
             "EDIFFG": -0.05,
@@ -91,7 +91,7 @@ SIGMA = 0.05"""
 class MVLCINEBSetTest(unittest.TestCase):
     structures = [Structure.from_file(get_path("POSCAR" + str(i), dirname="io_files")) for i in range(3)]
 
-    def test_incar(self):
+    def test_incar(self) -> None:
         m = MVLCINEBSet(self.structures)
 
         incar_string = m.incar.get_str(sort_keys=True)
@@ -125,7 +125,7 @@ SIGMA = 0.05
 SPRING = -5"""
         assert incar_string.strip() == incar_expect.strip()
 
-    def test_incar_user_setting(self):
+    def test_incar_user_setting(self) -> None:
         user_incar_settings = {"IOPT": 3, "EDIFFG": -0.05, "NPAR": 4, "ISIF": 3}
         m = MVLCINEBSet(self.structures, user_incar_settings=user_incar_settings)
         incar_string = m.incar.get_str(sort_keys=True, pretty=True)
@@ -168,7 +168,7 @@ class UtilityTest(unittest.TestCase):
 
     structure = Structure.from_file(get_path("POSCAR", dirname="io_files"))
 
-    def test_get_endpoints_from_index(self):
+    def test_get_endpoints_from_index(self) -> None:
         endpoints = get_endpoints_from_index(structure=self.structure, site_indices=[0, 1])
         ep_0 = endpoints[0].as_dict()
         ep_1 = endpoints[1].as_dict()
@@ -178,7 +178,7 @@ class UtilityTest(unittest.TestCase):
         assert ep_0 == ep_0_expect
         assert ep_1 == ep_1_expect
 
-    def test_get_endpoint_dist(self):
+    def test_get_endpoint_dist(self) -> None:
         ep0 = Structure.from_file(get_path("POSCAR_ep0", dirname="io_files"))
         ep1 = Structure.from_file(get_path("POSCAR_ep1", dirname="io_files"))
         distances = get_endpoint_dist(ep0, ep1)

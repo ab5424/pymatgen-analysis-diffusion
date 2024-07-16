@@ -14,7 +14,7 @@ from pymatgen.util.coord import pbc_diff
 
 
 class KmeansTest(unittest.TestCase):
-    def test_cluster(self):
+    def test_cluster(self) -> None:
         data = np.random.uniform(size=(10, 5))
         data = list(data)
         d2 = np.random.uniform(size=(10, 5)) + ([5] * 5)
@@ -38,7 +38,7 @@ class KmeansTest(unittest.TestCase):
 
 
 class KmeansPBCTest(unittest.TestCase):
-    def test_cluster(self):
+    def test_cluster(self) -> None:
         lattice = Lattice.cubic(4)
 
         pts = []

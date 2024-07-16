@@ -34,7 +34,7 @@ class RadialDistributionFunction:
         rmax: float = 10.0,
         cell_range: int = 1,
         sigma: float = 0.1,
-    ):
+    ) -> None:
         """
         Args:
             structures ([Structure]): list of structure
@@ -248,7 +248,7 @@ class RadialDistributionFunction:
 
         return ax
 
-    def export_rdf(self, filename: str):
+    def export_rdf(self, filename: str) -> None:
         """
         Output RDF data to a csv file.
 
@@ -281,7 +281,7 @@ class RadialDistributionFunctionFast:
         ngrid: float = 101,
         sigma: float = 0.0,
         n_jobs=None,
-    ):
+    ) -> None:
         """
         This method calculates rdf on `np.linspace(rmin, rmax, ngrid)` points.
 
