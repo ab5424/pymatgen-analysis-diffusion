@@ -11,9 +11,11 @@ from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import squareform
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pymatgen.analysis.diffusion.analyzer import DiffusionAnalyzer
     from pymatgen.core.structure import Structure
-    from pymatgen.util.typing import PathLike
+    from pymatgen.util.typing import PathLike, SpeciesLike
 
 
 class ProbabilityDensityAnalysis:
@@ -36,7 +38,7 @@ class ProbabilityDensityAnalysis:
         structure: Structure,
         trajectories: np.ndarray,
         interval: float = 0.5,
-        species: tuple = ("Li", "Na"),
+        species: Sequence[SpeciesLike] = ("Li", "Na"),
     ) -> None:
         """
         Initialization.
@@ -129,7 +131,7 @@ class ProbabilityDensityAnalysis:
 
     @classmethod
     def from_diffusion_analyzer(
-        cls, diffusion_analyzer: DiffusionAnalyzer, interval: float = 0.5, species: tuple = ("Li", "Na")
+        cls, diffusion_analyzer: DiffusionAnalyzer, interval: float = 0.5, species: Sequence[SpeciesLike] = ("Li", "Na")
     ) -> ProbabilityDensityAnalysis:
         """
         Create a ProbabilityDensityAnalysis from a diffusion_analyzer object.
@@ -297,7 +299,11 @@ class SiteOccupancyAnalyzer:
     """
 
     def __init__(
-        self, structure: Structure, coords_ref: np.ndarray, trajectories: np.ndarray, species: tuple = ("Li", "Na")
+        self,
+        structure: Structure,
+        coords_ref: np.ndarray,
+        trajectories: np.ndarray,
+        species: Sequence[SpeciesLike] = ("Li", "Na"),
     ) -> None:
         """
         Args:
@@ -340,7 +346,10 @@ class SiteOccupancyAnalyzer:
 
     @classmethod
     def from_diffusion_analyzer(
-        cls, coords_ref: np.ndarray, diffusion_analyzer: DiffusionAnalyzer, species: tuple = ("Li", "Na")
+        cls,
+        coords_ref: np.ndarray,
+        diffusion_analyzer: DiffusionAnalyzer,
+        species: Sequence[SpeciesLike] = ("Li", "Na"),
     ) -> SiteOccupancyAnalyzer:
         """
         Create a SiteOccupancyAnalyzer object using a diffusion_analyzer object.

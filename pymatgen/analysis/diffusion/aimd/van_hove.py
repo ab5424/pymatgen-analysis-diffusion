@@ -19,8 +19,11 @@ from pymatgen.util.plotting import pretty_plot
 from .rdf import RadialDistributionFunction
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pymatgen.analysis.diffusion.analyzer import DiffusionAnalyzer
     from pymatgen.core import Structure
+    from pymatgen.util.typing import SpeciesLike
 
 __author__ = "Iek-Heng Chu"
 __version__ = "1.0"
@@ -48,8 +51,8 @@ class VanHoveAnalysis:
         step_skip: int = 50,
         sigma: float = 0.1,
         cell_range: int = 1,
-        species: tuple | list = ("Li", "Na"),
-        reference_species: tuple | list | None = None,
+        species: Sequence[SpeciesLike] = ("Li", "Na"),
+        reference_species: Sequence | None = None,
         indices: list | None = None,
     ) -> None:
         """
