@@ -226,7 +226,7 @@ class DiffusionAnalyzer(MSONable):
         self.min_obs = min_obs
         self.smoothed = smoothed
         self.avg_nsteps = avg_nsteps
-        self.lattices = lattices or np.array([structure.lattice.matrix.tolist()])
+        self.lattices = lattices if lattices is not None else np.array([structure.lattice.matrix.tolist()])
 
         indices: list = []
         framework_indices = []
