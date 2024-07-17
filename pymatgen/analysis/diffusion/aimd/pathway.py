@@ -125,12 +125,12 @@ class ProbabilityDensityAnalysis:
         self.lens = lens
         self.Pr = Pr
         self.species = species
-        self.stable_sites = None
+        self.stable_sites: np.ndarray = None
 
     @classmethod
     def from_diffusion_analyzer(
         cls, diffusion_analyzer: DiffusionAnalyzer, interval: float = 0.5, species: tuple = ("Li", "Na")
-    ):
+    ) -> ProbabilityDensityAnalysis:
         """
         Create a ProbabilityDensityAnalysis from a diffusion_analyzer object.
 
@@ -221,7 +221,7 @@ class ProbabilityDensityAnalysis:
 
         self.stable_sites = np.array(stable_sites)
 
-    def get_full_structure(self):
+    def get_full_structure(self) -> Structure:
         """
         Generate the structure with the low-energy sites included. In the end, a
         pymatgen Structure object will be returned.
@@ -341,7 +341,7 @@ class SiteOccupancyAnalyzer:
     @classmethod
     def from_diffusion_analyzer(
         cls, coords_ref: np.ndarray, diffusion_analyzer: DiffusionAnalyzer, species: tuple = ("Li", "Na")
-    ):
+    ) -> SiteOccupancyAnalyzer:
         """
         Create a SiteOccupancyAnalyzer object using a diffusion_analyzer object.
 

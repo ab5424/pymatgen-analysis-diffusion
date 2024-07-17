@@ -25,9 +25,11 @@ from pymatgen.io.vasp.inputs import Poscar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pymatgen.io.vasp.outputs import Chgcar
     from pymatgen.symmetry.structure import SymmetrizedStructure
-    from pymatgen.util.typing import PathLike
+    from pymatgen.util.typing import PathLike, SpeciesLike
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ class IDPPSolver:
     Smidstrup et al., J. Chem. Phys. 140, 214106 (2014).
     """
 
-    def __init__(self, structures) -> None:
+    def __init__(self, structures: list[Structure]) -> None:
         """
         Initialization.
 
@@ -100,14 +102,14 @@ class IDPPSolver:
 
     def run(
         self,
-        maxiter=1000,
-        tol=1e-5,
-        gtol=1e-3,
-        step_size=0.05,
-        max_disp=0.05,
-        spring_const=5.0,
-        species=None,
-    ):
+        maxiter: int = 1000,
+        tol: float = 1e-5,
+        gtol: float = 1e-3,
+        step_size: float = 0.05,
+        max_disp: float = 0.05,
+        spring_const: float = 5.0,
+        species: list[SpeciesLike] | None = None,
+    ) -> list[Structure]:
         """
         Perform iterative minimization of the set of objective functions in an
         NEB-like manner. In each iteration, the total force matrix for each
@@ -194,11 +196,11 @@ class IDPPSolver:
     @classmethod
     def from_endpoints(
         cls,
-        endpoints,
+        endpoints: list[Structure],
         nimages: int = 5,
         sort_tol: float = 1.0,
         interpolate_lattices: bool = False,
-    ):
+    ) -> IDPPSolver:
         """
         A class method that starts with end-point structures instead. The
         initial guess for the IDPP algo is then constructed using linear
@@ -236,7 +238,7 @@ class IDPPSolver:
 
         return IDPPSolver(images)
 
-    def _get_funcs_and_forces(self, x):
+    def _get_funcs_and_forces(self, x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Calculate the set of objective functions as well as their gradients,
         i.e. "effective true forces".
@@ -266,7 +268,7 @@ class IDPPSolver:
         return 0.5 * np.array(funcs), -2 * np.array(funcs_prime)
 
     @staticmethod
-    def get_unit_vector(vec):
+    def get_unit_vector(vec: np.ndarray) -> np.ndarray:
         """
         Calculate the unit vector of a vector.
 
@@ -275,7 +277,7 @@ class IDPPSolver:
         """
         return vec / np.sqrt(np.sum(vec**2))
 
-    def _get_total_forces(self, x, true_forces, spring_const):
+    def _get_total_forces(self, x: np.ndarray, true_forces: np.ndarray, spring_const: float) -> np.ndarray:
         """
         Calculate the total force on each image structure, which is equal to
         the spring force along the tangent + true force perpendicular to the
@@ -326,8 +328,8 @@ class MigrationHop(MSONable):
         """
         self.isite = isite
         self.esite = esite
-        self.iindex = None
-        self.eindex = None
+        self.iindex = -1
+        self.eindex = -1
         self.symm_structure = symm_structure
         self.host_symm_struct = host_symm_struct
         self.symprec = symprec
@@ -345,7 +347,7 @@ class MigrationHop(MSONable):
                 self.eindex = i
 
         # if no index was identified then loop over each site until something is found
-        if self.iindex is None:
+        if self.iindex is -1:
             for i, sites in enumerate(self.symm_structure.equivalent_sites):
                 for itr_site in sites:
                     if sg.are_symmetrically_equivalent([isite], [itr_site]):
@@ -354,7 +356,7 @@ class MigrationHop(MSONable):
                 else:
                     continue
                 break
-        if self.eindex is None:
+        if self.eindex is -1:
             for i, sites in enumerate(self.symm_structure.equivalent_sites):
                 for itr_site in sites:
                     if sg.are_symmetrically_equivalent([esite], [itr_site]):
@@ -364,9 +366,9 @@ class MigrationHop(MSONable):
                     continue
                 break
 
-        if self.iindex is None:
+        if self.iindex is -1:
             raise RuntimeError(f"No symmetrically equivalent site was found for {isite}")
-        if self.eindex is None:
+        if self.eindex is -1:
             raise RuntimeError(f"No symmetrically equivalent site was found for {esite}")
 
     def __repr__(self) -> str:
@@ -383,20 +385,20 @@ class MigrationHop(MSONable):
         )
 
     @property
-    def length(self):
+    def length(self) -> float:
         """
         Returns:
             (float) Length of migration path.
         """
         return np.linalg.norm(self.isite.coords - self.esite.coords)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.iindex + self.eindex
 
     def __str__(self) -> str:
         return self.__repr__()
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:  # noqa: ANN001
         if self.symm_structure != other.symm_structure:
             return False
 
@@ -409,7 +411,9 @@ class MigrationHop(MSONable):
             self.symprec,
         )
 
-    def get_structures(self, nimages=5, vac_mode=True, idpp=False, **idpp_kwargs):
+    def get_structures(
+        self, nimages: int = 5, vac_mode: bool = True, idpp: bool = False, **idpp_kwargs
+    ) -> list[Structure]:
         r"""
         Generate structures for NEB calculation.
 
@@ -450,7 +454,7 @@ class MigrationHop(MSONable):
 
         return structures
 
-    def _split_migrating_and_other_sites(self, vac_mode):
+    def _split_migrating_and_other_sites(self, vac_mode: bool) -> tuple[list[Site], list[Site]]:
         migrating_specie_sites = []
         other_sites = []
         for site in self.symm_structure.sites:
@@ -512,7 +516,7 @@ class MigrationHop(MSONable):
         )
         return start_struct, end_struct, base_sc
 
-    def write_path(self, fname, **kwargs) -> None:
+    def write_path(self, fname: PathLike, **kwargs) -> None:
         r"""
         Write the path to a file for easy viewing.
 
@@ -537,11 +541,11 @@ class DistinctPathFinder:
 
     def __init__(
         self,
-        structure,
-        migrating_specie,
-        max_path_length=None,
-        symprec=0.1,
-        perc_mode=">1d",
+        structure: Structure,
+        migrating_specie: SpeciesLike,
+        max_path_length: float | None = None,
+        symprec: float = 0.1,
+        perc_mode: str = ">1d",
     ) -> None:
         """
         Args:
@@ -600,7 +604,7 @@ class DistinctPathFinder:
         else:
             self.max_path_length = max_path_length
 
-    def get_paths(self):
+    def get_paths(self) -> list[MigrationHop]:
         """
         Returns:
             [MigrationHop] All distinct migration paths.
@@ -616,7 +620,7 @@ class DistinctPathFinder:
 
         return sorted(paths, key=lambda p: p.length)
 
-    def write_all_paths(self, fname, nimages=5, **kwargs) -> None:
+    def write_all_paths(self, fname: PathLike, nimages: int = 5, **kwargs) -> None:
         r"""
         Write a file containing all paths, using hydrogen as a placeholder for
         the images. H is chosen as it is the smallest atom. This is extremely
@@ -657,7 +661,7 @@ class NEBPathfinder:
         start_struct: Structure,
         end_struct: Structure,
         relax_sites: list[int],
-        v,
+        v: np.ndarray,
         n_images: int = 20,
         mid_struct: Structure = None,
     ) -> None:
@@ -760,17 +764,17 @@ class NEBPathfinder:
 
     @staticmethod
     def string_relax(
-        start,
-        end,
-        V,
-        n_images=25,
-        dr=None,
-        h=3.0,
-        k=0.17,
-        min_iter=100,
-        max_iter=10000,
-        max_tol=5e-6,
-    ):
+        start: np.ndarray,
+        end: np.ndarray,
+        V: np.ndarray,
+        n_images: int = 25,
+        dr: np.ndarray | None = None,
+        h: float = 3.0,
+        k: float = 0.17,
+        min_iter: int = 100,
+        max_iter: int = 10000,
+        max_tol: float = 5e-6,
+    ) -> np.ndarray:
         """
         Implements path relaxation via the elastic band method. In general, the
         method is to define a path by a set of points (images) connected with
@@ -1060,7 +1064,7 @@ class FreeVolumePotential(StaticPotential):
             self.normalize()
 
     @staticmethod
-    def __add_gaussians(s: Structure, dim, r: float = 1.5) -> np.ndarray:
+    def __add_gaussians(s: Structure, dim: Sequence, r: float = 1.5) -> np.ndarray:
         gauss_dist = np.zeros(dim)
         for a_d in np.arange(0, dim[0], 1):
             for b_d in np.arange(0, dim[1], 1):

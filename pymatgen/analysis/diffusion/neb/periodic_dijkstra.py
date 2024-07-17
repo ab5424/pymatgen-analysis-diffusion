@@ -38,7 +38,7 @@ def _get_adjacency_with_images(G: Graph) -> dict:
         dict: Nested dictionary with [start][end][edge_key][data_field]
     """
 
-    def copy_dict(d):
+    def copy_dict(d: dict) -> dict:
         # recursively copies the dictionary to resolve the fact that
         # two entries in the dictionary can point to the same mutable object
         # eg. changing p_graph[v][u][0]["to_jimage"] also changes
@@ -69,7 +69,7 @@ def periodic_dijkstra(
     weight: str = "weight",
     max_image: int = 2,
     target_reached: Callable = lambda idx, jimage: False,
-):
+) -> tuple | dict:
     """
     Find the lowest cost pathway from a source point in the periodic graph.
     Since the search can move many cells away without finding the target

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from typing import TYPE_CHECKING
 
 from pymatgen.analysis.diffusion.neb.io import (
     MVLCINEBEndPointSet,
@@ -11,12 +12,15 @@ from pymatgen.analysis.diffusion.neb.io import (
 )
 from pymatgen.core import Structure
 
+if TYPE_CHECKING:
+    from pymatgen.util.typing import PathLike
+
 __author__ = "hat003"
 
 test_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)))
 
 
-def get_path(path_str, dirname="./"):
+def get_path(path_str: PathLike, dirname: PathLike = "./") -> str:
     cwd = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(cwd, dirname, path_str)
 

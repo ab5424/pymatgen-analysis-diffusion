@@ -336,7 +336,7 @@ class EvolutionAnalyzer:
         self.time_step = time_step
 
     @staticmethod
-    def get_pairs(structure: Structure):
+    def get_pairs(structure: Structure) -> list:
         """
         Get all element pairs in a structure.
 
@@ -484,7 +484,7 @@ class EvolutionAnalyzer:
         df: pd.DataFrame,
         x_label: str | None = None,
         cb_label: str | None = None,
-        cmap=plt.cm.plasma,  # pylint: disable=E1101
+        cmap: plt.cm = plt.cm.plasma,  # pylint: disable=E1101
     ) -> plt.Axes:
         """
         Plot the evolution with time for a given DataFrame. It can be RDF,
@@ -537,7 +537,7 @@ class EvolutionAnalyzer:
     def plot_rdf_evolution(
         self,
         pair: tuple,
-        cmap=plt.cm.plasma,  # pylint: disable=E1101
+        cmap: plt.cm = plt.cm.plasma,  # pylint: disable=E1101
         df: pd.DataFrame = None,
     ) -> plt.Axes:
         """
@@ -562,7 +562,7 @@ class EvolutionAnalyzer:
         self,
         specie: str,
         direction: str = "c",
-        cmap=plt.cm.Blues,  # pylint: disable=E1101
+        cmap: plt.cm = plt.cm.Blues,  # pylint: disable=E1101
         df: pd.DataFrame = None,
     ) -> plt.Axes:
         """

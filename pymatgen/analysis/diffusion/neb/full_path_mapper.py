@@ -284,7 +284,7 @@ class MigrationGraph(MSONable):
             res.append(struct)
         return res
 
-    def _get_pos_and_migration_hop(self, u, v, w) -> None:
+    def _get_pos_and_migration_hop(self, u: int, v: int, w: int) -> None:
         """
         insert a single MigrationHop object on a graph edge
         Args:
@@ -361,7 +361,7 @@ class MigrationGraph(MSONable):
             cost_val = np.prod([v[ik] for ik in cost_keys])
             self.add_data_to_similar_edges(k, {"cost": cost_val})
 
-    def get_path(self, max_val=100000, flip_hops: bool = True) -> Generator:
+    def get_path(self, max_val: float = 100000, flip_hops: bool = True) -> Generator:
         """
         obtain a pathway through the material using hops that are in the current graph
         Basic idea:
@@ -448,7 +448,7 @@ class MigrationGraph(MSONable):
         if added_keys is not None:
             keys += added_keys
 
-        def get_keys(d):
+        def get_keys(d: dict) -> dict:
             return {k_: d[k_] for k_ in keys if k_ in d}
 
         for u, v, d in self.m_graph.graph.edges(data=True):
@@ -562,7 +562,7 @@ class ChargeBarrierGraph(MigrationGraph):
             mid_struct=mid_struct,
         )
 
-    def _get_avg_chg_at_max(
+    def _get_avg_chg_at_max(  # noqa: ANN202
         self,
         migration_hop: MigrationHop,
         radius: float | None = None,
@@ -664,7 +664,7 @@ class ChargeBarrierGraph(MigrationGraph):
             / self.potential_field.structure.volume
         )
 
-    def populate_edges_with_chg_density_info(self, tube_radius=1) -> None:
+    def populate_edges_with_chg_density_info(self, tube_radius: float = 1) -> None:
         """
         Args:
             tube_radius: Tube radius.
@@ -737,7 +737,7 @@ def get_only_sites_from_structure(structure: Structure, migrating_specie: str) -
     return Structure.from_sites(migrating_ion_sites)
 
 
-def _shift_grid(vv) -> np.ndarray:
+def _shift_grid(vv: np.ndarray) -> np.ndarray:
     """
     Move the grid points by half a step so that they sit in the center
     Args:
@@ -852,7 +852,7 @@ migration events using the following procedure:
 # Utility Functions for comparing UC and SC hops
 
 
-def almost(a, b) -> bool:
+def almost(a, b) -> bool:  # noqa: ANN001
     """Return true if the values are almost equal."""
     SMALL_VAL = 1e-4
     try:
@@ -863,7 +863,7 @@ def almost(a, b) -> bool:
         raise NotImplementedError
 
 
-def check_uc_hop(sc_hop, uc_hop) -> tuple | None:
+def check_uc_hop(sc_hop: MigrationHop, uc_hop: MigrationHop) -> tuple | None:
     """
     See if hop in the 2X2X2 supercell and a unit cell hop
     are equivalent under lattice translation.

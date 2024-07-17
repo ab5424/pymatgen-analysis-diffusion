@@ -31,7 +31,7 @@ class Kmeans:
         """
         self.max_iterations = max_iterations
 
-    def cluster(self, points, k: int, initial_centroids=None):
+    def cluster(self, points: np.ndarray, k: int, initial_centroids: np.ndarray = None) -> tuple:
         """
         Args:
             points (ndarray): Data points as a mxn ndarray, where m is the
@@ -67,7 +67,7 @@ class Kmeans:
         return centroids, labels, ss
 
     @staticmethod
-    def get_labels(points, centroids):
+    def get_labels(points: np.ndarray, centroids: np.ndarray) -> tuple:
         """
         For each element in the dataset, chose the closest centroid.
         Make that centroid the element's label.
@@ -81,7 +81,7 @@ class Kmeans:
         return np.where(dists == min_dists[:, None])[1], np.sum(min_dists**2)
 
     @staticmethod
-    def get_centroids(points, labels, k, centroids):
+    def get_centroids(points: np.ndarray, labels: np.ndarray, k: int, centroids: np.ndarray) -> np.ndarray:
         """
         Each centroid is the geometric mean of the points that
         have that centroid's label. Important: If a centroid is empty (no
@@ -103,7 +103,7 @@ class Kmeans:
                 centroids.append(get_random_centroid(points))
         return np.array(centroids)
 
-    def should_stop(self, old_centroids, centroids, iterations):
+    def should_stop(self, old_centroids: np.ndarray, centroids: np.ndarray, iterations: int) -> bool:
         """
         Check for stopping conditions.
 
@@ -127,7 +127,7 @@ class KmeansPBC(Kmeans):
     fractional coordinates.
     """
 
-    def __init__(self, lattice, max_iterations=1000) -> None:
+    def __init__(self, lattice: np.ndarray, max_iterations: int = 1000) -> None:
         """
         Args:
             lattice: Lattice
@@ -136,7 +136,7 @@ class KmeansPBC(Kmeans):
         self.lattice = lattice
         self.max_iterations = max_iterations
 
-    def get_labels(self, points, centroids):
+    def get_labels(self, points, centroids):  # noqa: ANN001,ANN201
         """
         For each element in the dataset, chose the closest centroid.
         Make that centroid the element's label.
@@ -149,7 +149,7 @@ class KmeansPBC(Kmeans):
         min_dists = np.min(dists, axis=1)
         return np.where(dists == min_dists[:, None])[1], np.sum(min_dists**2)
 
-    def get_centroids(self, points, labels, k, centroids):
+    def get_centroids(self, points, labels, k, centroids):  # noqa: ANN001,ANN201
         """
         Each centroid is the geometric mean of the points that
         have that centroid's label. Important: If a centroid is empty (no
@@ -179,7 +179,7 @@ class KmeansPBC(Kmeans):
             new_centroids.append(c)
         return np.array(new_centroids)
 
-    def should_stop(self, old_centroids, centroids, iterations) -> bool:
+    def should_stop(self, old_centroids: np.ndarray, centroids: np.ndarray, iterations: int) -> bool:
         """
         Check for stopping conditions.
 

@@ -53,7 +53,7 @@ class ParseEntriesTest(unittest.TestCase):
         self.struct_inserted_1Li2 = get_inserted_on_base(self.base, self.inserted_1Li2, self.li_ent, self.sm)
         self.struct_inserted_2Li = get_inserted_on_base(self.base, self.inserted_2Li, self.li_ent, self.sm)
 
-    def _is_valid_inserted_ent(self, mapped_struct):
+    def _is_valid_inserted_ent(self, mapped_struct: Structure) -> bool:
         res = True
         for isite in mapped_struct.sites:
             if isite.species_string == "Li":

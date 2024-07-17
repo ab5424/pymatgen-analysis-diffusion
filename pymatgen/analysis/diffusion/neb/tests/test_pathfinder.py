@@ -5,6 +5,7 @@ from __future__ import annotations
 import glob
 import os
 import unittest
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -15,12 +16,15 @@ from pymatgen.core import Composition, PeriodicSite, Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.testing import PymatgenTest
 
+if TYPE_CHECKING:
+    from pymatgen.util.typing import PathLike
+
 __author__ = "Iek-Heng Chu"
 __version__ = "1.0"
 __date__ = "March 14, 2017"
 
 
-def get_path(path_str, dirname="./"):
+def get_path(path_str: PathLike, dirname: PathLike = "./") -> str:
     cwd = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(cwd, dirname, path_str)
 
