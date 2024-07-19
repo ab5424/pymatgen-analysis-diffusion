@@ -28,7 +28,7 @@ def add_edge_data_from_sc(
     mg: MigrationGraph,
     i_sc: Structure,
     e_sc: Structure,
-    data_array: list,
+    data_array: list | str | float,
     key: str = "custom_key",
     use_host_sg: bool = True,
 ) -> None:
@@ -56,7 +56,10 @@ def add_edge_data_from_sc(
     isite, esite = i_wi[0], e_wi[0]
     uhop_index, mh_from_sc = get_unique_hop(mg, i_sc, isite, esite, use_host_sg)
     add_dict = {key: data_array}
-    mg.add_data_to_similar_edges(target_label=uhop_index, data=add_dict, m_hop=mh_from_sc)
+    if isinstance(data_array, list):
+        mg.add_data_to_similar_edges(target_label=uhop_index, data=add_dict, m_hop=mh_from_sc)
+    else:
+        mg.add_data_to_similar_edges(target_label=uhop_index, data=add_dict)
 
 
 def get_uc_pos(
@@ -113,7 +116,7 @@ def get_uc_pos(
     return p0, p1, p2
 
 
-def _get_first_close_site(frac_coord, structure, stol=0.1):
+def _get_first_close_site(frac_coord: np.ndarray, structure: Structure, stol: float = 0.1) -> np.ndarray:
     for site in structure.sites:
         dist, image = structure.lattice.get_distance_and_image(frac_coord, site.frac_coords)
         if dist < stol:
@@ -121,7 +124,7 @@ def _get_first_close_site(frac_coord, structure, stol=0.1):
     return frac_coord
 
 
-def mh_eq(mh1, mh2):
+def mh_eq(mh1: MigrationHop, mh2: MigrationHop) -> bool:
     """
     Allow for symmetric matching of MigrationPath objects with variable precession.
 

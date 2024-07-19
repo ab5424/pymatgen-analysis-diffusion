@@ -26,22 +26,28 @@ module_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class FuncTest(PymatgenTest):
-    def test_get_conversion_factor(self):
+    def test_get_conversion_factor(self) -> None:
         s = PymatgenTest.get_structure("LiFePO4")
         # large tolerance because scipy constants changed between 0.16.1 and 0.17
         self.assertAlmostEqual(41370704.343540139, get_conversion_factor(s, "Li", 600), delta=20)
 
-    def test_fit_arrhenius(self):
+    def test_fit_arrhenius(self) -> None:
         Ea = 0.5
         k = const.k / const.e
         c = 12
         temps = np.array([300, 1000, 500])
         diffusivities = c * np.exp(-Ea / (k * temps))
         diffusivities *= np.array([1.00601834013, 1.00803236262, 0.98609720824])
+
         r = fit_arrhenius(temps, diffusivities)
         self.assertAlmostEqual(r[0], Ea)
         self.assertAlmostEqual(r[1], c)
         self.assertAlmostEqual(r[2], 0.000895566)
+
+        r = fit_arrhenius(temps, diffusivities, mode="exp", diffusivity_errors=diffusivities * 0.01)
+        self.assertAlmostEqual(r[0], Ea, 5)
+        self.assertAlmostEqual(r[1], c, 2)
+        self.assertAlmostEqual(r[2], 0.000904815)
 
         # when not enough values for error estimate
         r2 = fit_arrhenius([1, 2], [10, 10])
@@ -52,9 +58,14 @@ class FuncTest(PymatgenTest):
         ax = get_arrhenius_plot(temps, diffusivities)
         assert isinstance(ax, mpl.axes.Axes)
 
+        ax = get_arrhenius_plot(temps, diffusivities, mode="exp", diffusivity_errors=diffusivities * 0.01, unit="eV")
+        assert isinstance(ax, mpl.axes.Axes)
+        assert ax.get_xlabel() == "T (K)"
+        assert ax.get_ylabel() == "D (cm$^2$/s)"
+
 
 class DiffusionAnalyzerTest(PymatgenTest):
-    def test_init(self):
+    def test_init(self) -> None:
         # Diffusion vasprun.xmls are rather large. We are only going to use a
         # very small preprocessed run for testing. Note that the results are
         # unreliable for short runs.
@@ -225,17 +236,17 @@ class DiffusionAnalyzerTest(PymatgenTest):
 
             d.export_msdt("test.csv")
             with open("test.csv") as f:
-                data = []
+                _data = []
                 for row in csv.reader(f):
                     if row:
-                        data.append(row)
-            data.pop(0)
-            data = np.array(data, dtype=np.float64)
-            assert data[:, 1] == pytest.approx(d.msd)
-            assert data[:, -1] == pytest.approx(d.mscd)
+                        _data.append(row)
+            _data.pop(0)
+            data = np.array(_data, dtype=np.float64)
+            assert [row[1] for row in data] == pytest.approx(d.msd)
+            assert [row[-1] for row in data] == pytest.approx(d.mscd)
             os.remove("test.csv")
 
-    def test_init_npt(self):
+    def test_init_npt(self) -> None:
         # Diffusion vasprun.xmls are rather large. We are only going to use a
         # very small preprocessed run for testing. Note that the results are
         # unreliable for short runs.
@@ -441,17 +452,17 @@ class DiffusionAnalyzerTest(PymatgenTest):
 
             d.export_msdt("test.csv")
             with open("test.csv") as f:
-                data = []
+                _data = []
                 for row in csv.reader(f):
                     if row:
-                        data.append(row)
-            data.pop(0)
-            data = np.array(data, dtype=np.float64)
-            assert data[:, 1] == pytest.approx(d.msd)
-            assert data[:, -1] == pytest.approx(d.mscd)
+                        _data.append(row)
+            _data.pop(0)
+            data = np.array(_data, dtype=np.float64)
+            assert [row[1] for row in data] == pytest.approx(d.msd)
+            assert [row[-1] for row in data] == pytest.approx(d.mscd)
             os.remove("test.csv")
 
-    def test_from_structure_NPT(self):
+    def test_from_structure_NPT(self) -> None:
         coords1 = np.array([[0.0, 0.0, 0.0], [0.5, 0.5, 0.5]])
         coords2 = np.array([[0.0, 0.0, 0.0], [0.6, 0.6, 0.6]])
         coords3 = np.array([[0.0, 0.0, 0.0], [0.7, 0.7, 0.7]])
@@ -466,7 +477,7 @@ class DiffusionAnalyzerTest(PymatgenTest):
             structures,
             specie="Li",
             temperature=500.0,
-            time_step=2.0,
+            time_step=2,
             step_skip=1,
             smoothed=None,
         )
